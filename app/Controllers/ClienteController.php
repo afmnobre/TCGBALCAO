@@ -11,7 +11,7 @@ class ClienteController extends Controller
         AuthMiddleware::verificarLogin();
 
         $clienteModel = new Cliente();
-        $clientes = $clienteModel->listarPorLoja($_SESSION['LOJA']['id']);
+        $clientes = $clienteModel->listarPorLoja($_SESSION['LOJA']['id_loja']);
 
         // Carregar cardgames de cada cliente
         foreach ($clientes as &$cliente) {
@@ -46,7 +46,7 @@ class ClienteController extends Controller
         $cardgames = $cardgameModel->listarTodos();
 
         $clienteModel = new Cliente();
-        $cliente = $clienteModel->buscar($id, $_SESSION['loja_id']);
+        $cliente = $clienteModel->buscar($id, $_SESSION['LOJA']['id_loja']);
 
         // Carregar cardgames já vinculados ao cliente
         $cardgamesCliente = $clienteModel->listarCardgames($id);
@@ -68,7 +68,7 @@ class ClienteController extends Controller
             'telefone' => $_POST['telefone']
         ];
 
-        $id_loja   = $_SESSION['loja_id'];
+        $id_loja   = $_SESSION['LOJA']['id_loja'];
         $cardgames = $_POST['cardgames'] ?? [];
 
         $resultado = $clienteModel->criarOuVincular($dadosCliente, $id_loja, $cardgames);
@@ -105,11 +105,10 @@ class ClienteController extends Controller
     public function excluir($id)
     {
         $clienteModel = new Cliente();
-        $clienteModel->excluir($id, $_SESSION['loja_id']);
+        $clienteModel->excluir($id, $_SESSION['LOJA']['id_loja']);
 
         header('Location: /cliente');
         exit;
     }
 }
-
 

@@ -17,7 +17,6 @@ class Loja
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // 🔹 Novo método para buscar dados completos da loja por ID
     public static function buscarPorId($id_loja)
     {
         $db = Database::getInstance();
@@ -28,6 +27,5 @@ class Loja
         $stmt->execute(['id_loja' => $id_loja]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
 }
 

@@ -77,7 +77,6 @@ class Cliente
         return ['id_cliente' => $id_cliente, 'novo' => $novo];
     }
 
-
     public function buscar($id, $id_loja)
     {
         $sql = "
@@ -99,7 +98,6 @@ class Cliente
 
     public function atualizar($id, $dadosCliente, $cardgames)
     {
-        // Atualiza dados básicos do cliente
         $stmt = $this->db->prepare("
             UPDATE clientes
             SET nome = :nome, email = :email, telefone = :telefone
@@ -112,11 +110,9 @@ class Cliente
             'id'       => $id
         ]);
 
-        // Remove vínculos antigos de cardgames
         $stmtDel = $this->db->prepare("DELETE FROM clientes_cardgames WHERE id_cliente = :id_cliente");
         $stmtDel->execute(['id_cliente' => $id]);
 
-        // Reinsere vínculos com os cardgames selecionados
         foreach ($cardgames as $id_cardgame) {
             $stmtIns = $this->db->prepare("
                 INSERT INTO clientes_cardgames (id_cliente, id_cardgame)
@@ -133,7 +129,6 @@ class Cliente
 
     public function excluir($id, $id_loja)
     {
-        // Remove vínculo da loja
         $stmt = $this->db->prepare("
             DELETE FROM clientes_lojas
             WHERE id_cliente = :id AND id_loja = :id_loja
@@ -143,21 +138,18 @@ class Cliente
             'id_loja' => $id_loja
         ]);
 
-        // Remove vínculos de cardgames
         $stmt2 = $this->db->prepare("
             DELETE FROM clientes_cardgames
             WHERE id_cliente = :id
         ");
         $stmt2->execute(['id' => $id]);
 
-        // Verifica se o cliente ainda está vinculado a alguma loja
         $stmt3 = $this->db->prepare("
             SELECT COUNT(*) FROM clientes_lojas WHERE id_cliente = :id
         ");
         $stmt3->execute(['id' => $id]);
         $total = $stmt3->fetchColumn();
 
-        // Se não tiver mais vínculos, exclui o cliente
         if ($total == 0) {
             $stmt4 = $this->db->prepare("DELETE FROM clientes WHERE id_cliente = :id");
             $stmt4->execute(['id' => $id]);

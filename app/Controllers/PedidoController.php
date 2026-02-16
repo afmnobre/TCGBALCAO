@@ -17,14 +17,14 @@ public function index()
     $clienteModel = new Cliente();
     $produtoModel = new Produto();
 
-    $clientes = $clienteModel->listarPorLoja($_SESSION['LOJA']['id']);
-    $produtos = $produtoModel->listarAtivosPorLoja($_SESSION['LOJA']['id']);
+    $clientes = $clienteModel->listarPorLoja($_SESSION['LOJA']['id_loja']);
+    $produtos = $produtoModel->listarAtivosPorLoja($_SESSION['LOJA']['id_loja']);
     $cardgames = $pedidoModel->listarCardgames();
 
     $hoje = date('Y-m-d');
     $dataSelecionada = $_GET['data'] ?? $hoje;
 
-    $pedidos = $pedidoModel->listarPorLojaDataTodos($_SESSION['LOJA']['id'], $dataSelecionada);
+    $pedidos = $pedidoModel->listarPorLojaDataTodos($_SESSION['LOJA']['id_loja'], $dataSelecionada);
 
     // 🔹 Remove pedidos zerados (sem itens, valor 0 e não pago)
     foreach ($pedidos as $key => $p) {
@@ -122,7 +122,7 @@ public function index()
         'produtos'          => $produtos,
         'pedidosPorCliente' => $pedidosPorCliente,
         'dataSelecionada'   => $dataSelecionada,
-        'datasPendentes'    => $pedidoModel->listarDatasPendentes($_SESSION['LOJA']['id']),
+        'datasPendentes'    => $pedidoModel->listarDatasPendentes($_SESSION['LOJA']['id_loja']),
         'cardgames'         => $cardgames
     ]);
 }
@@ -142,7 +142,7 @@ public function index()
         }
 
         // Buscar dados completos da loja
-        $loja = Loja::buscarPorId($_SESSION['LOJA']['id']);
+        $loja = Loja::buscarPorId($_SESSION['LOJA']['id_loja']);
 
         $this->rawView('pedido/recibo', [
             'pedido' => $pedido,
@@ -190,7 +190,7 @@ public function index()
                 if ($temValores) {
                     $pedidoModel->salvar([
                         'id_cliente'        => $idCliente,
-                        'id_loja'           => $_SESSION['LOJA']['id'],
+                        'id_loja'           => $_SESSION['LOJA']['id_loja'],
                         'valor_variado'     => $variado,
                         'observacao_variado'=> $observacaoVariado,
                         'pedido_pago'       => $pago,

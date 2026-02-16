@@ -12,7 +12,7 @@ class ProdutoController extends Controller
         AuthMiddleware::verificarLogin();
 
         $produtoModel = new Produto();
-        $produtos = $produtoModel->listarTodosPorLoja($_SESSION['LOJA']['id']);
+        $produtos = $produtoModel->listarTodosPorLoja($_SESSION['LOJA']['id_loja']);
 
         $this->view('produto/index', [
             'produtos' => $produtos
@@ -28,17 +28,17 @@ class ProdutoController extends Controller
     {
         $produtoModel = new Produto();
 
-    $dados = [
-        'id_loja'           => $_SESSION['loja_id'],
-        'nome'              => $_POST['nome'],
-        'emoji'             => $_POST['emoji'],
-        'valor_venda'       => str_replace(',', '.', str_replace('.', '', $_POST['valor_venda'])),
-        'valor_compra'      => str_replace(',', '.', str_replace('.', '', $_POST['valor_compra'])),
-        'controlar_estoque' => isset($_POST['controla_estoque']) ? 1 : 0,
-        'estoque_atual'     => $_POST['estoque_atual'] ?? 0,
-        'id_fornecedor'     => $_POST['id_fornecedor'] ?? null,
-        'ativo'             => 1
-    ];
+        $dados = [
+            'id_loja'           => $_SESSION['LOJA']['id_loja'],
+            'nome'              => $_POST['nome'],
+            'emoji'             => $_POST['emoji'],
+            'valor_venda'       => str_replace(',', '.', str_replace('.', '', $_POST['valor_venda'])),
+            'valor_compra'      => str_replace(',', '.', str_replace('.', '', $_POST['valor_compra'])),
+            'controlar_estoque' => isset($_POST['controla_estoque']) ? 1 : 0,
+            'estoque_atual'     => $_POST['estoque_atual'] ?? 0,
+            'id_fornecedor'     => $_POST['id_fornecedor'] ?? null,
+            'ativo'             => 1
+        ];
 
         $produtoModel->criar($dados);
 
@@ -49,7 +49,7 @@ class ProdutoController extends Controller
     public function editar($id_produto)
     {
         $produtoModel = new Produto();
-        $produto = $produtoModel->buscar($id_produto, $_SESSION['loja_id']);
+        $produto = $produtoModel->buscar($id_produto, $_SESSION['LOJA']['id_loja']);
 
         $this->view('produto/form', [
             'produto' => $produto
@@ -68,7 +68,8 @@ class ProdutoController extends Controller
             'estoque_atual'     => $_POST['estoque_atual'] ?? 0,
             'estoque_alerta'    => $_POST['estoque_alerta'] ?? 0,
             'ordem_exibicao'    => $_POST['ordem_exibicao'] ?? 0,
-            'id_fornecedor'     => $_POST['id_fornecedor'] ?? null
+            'id_fornecedor'     => $_POST['id_fornecedor'] ?? null,
+            'id_loja'           => $_SESSION['LOJA']['id_loja']
         ];
 
         $produto = new Produto();
@@ -78,9 +79,10 @@ class ProdutoController extends Controller
         exit;
     }
 
-    public function ativar($id) {
+    public function ativar($id)
+    {
         $produto = new Produto();
-        $produto->ativar($id, $_SESSION['loja_id']);
+        $produto->ativar($id, $_SESSION['LOJA']['id_loja']);
         header("Location: /produto");
         exit;
     }
@@ -88,11 +90,12 @@ class ProdutoController extends Controller
     public function desativar($id_produto)
     {
         $produtoModel = new Produto();
-        $produtoModel->desativar($id_produto, $_SESSION['loja_id']);
+        $produtoModel->desativar($id_produto, $_SESSION['LOJA']['id_loja']);
 
         header('Location: /produto');
         exit;
     }
+
     public function salvarOrdem()
     {
         $ordens = $_POST['ordem'] ?? [];
@@ -113,7 +116,6 @@ class ProdutoController extends Controller
         header("Location: /produto");
         exit;
     }
-
-
 }
+
 

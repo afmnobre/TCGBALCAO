@@ -14,7 +14,7 @@ class AuthController extends Controller
         }
 
         // Só mostra o formulário se não estiver logado
-        require_once __DIR__ . '/../../app/Views/auth/login.php';
+        require_once __DIR__ . '/../../core/AuthLoja.php';
     }
 
     public function autenticar()
@@ -25,38 +25,36 @@ class AuthController extends Controller
         $loja = Loja::buscarPorLogin($email);
 
         if ($loja && password_verify($senha, $loja['senha'])) {
-            // Salva dados da loja na sessão com os nomes corretos
             $_SESSION['LOJA'] = [
-                'id_loja'    => $loja['id_loja'],
-                'nome_loja'  => $loja['nome_loja'],
-                'logo'       => $loja['logo'],        // campo correto da tabela
-                'cor_tema'   => $loja['cor_tema'],    // campo correto da tabela
-                'favicon'    => $loja['favicon'] ?? null
+                'id'   => $loja['id_loja'],
+                'nome' => $loja['nome_loja'],
+                'logo' => $loja['logo_loja'],
+                'cor'  => $loja['cor_tema']
             ];
 
-            // Salva dados do usuário também
-            $_SESSION['USUARIO'] = [
-                'id_usuario' => $loja['id_usuario'],
-                'perfil'     => $loja['perfil'],
-                'email'      => $email
-            ];
+            $_SESSION['usuario_id'] = $loja['id_usuario'];
+            $_SESSION['perfil']     = $loja['perfil'];
+            $_SESSION['loja_id']    = $loja['id_loja'];
 
             header("Location: /home");
             exit;
-        }
-
-        $_SESSION['erro_login'] = "Login inválido";
-        header("Location: /login");
     }
+
+    $_SESSION['erro_login'] = "Login inválido";
+    header("Location: /login");
+}
+
+
 
     public function logout()
     {
         session_start();
         unset($_SESSION['LOJA']);
-        unset($_SESSION['USUARIO']);
+        unset($_SESSION['usuario_id']);
+        unset($_SESSION['perfil']);
+        unset($_SESSION['loja_id']);
         session_destroy();
         header("Location: /login");
     }
 }
-
 

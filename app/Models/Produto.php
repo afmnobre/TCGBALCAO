@@ -154,6 +154,17 @@ class Produto
             'id_produto' => $id_produto
         ]);
     }
+    public function estoqueAtual($id_loja)
+    {
+        $sql = "SELECT nome, estoque_atual
+                FROM produtos
+                WHERE id_loja = :id_loja AND controlar_estoque = 1
+                ORDER BY nome ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_loja' => $id_loja]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
 
 }
 
