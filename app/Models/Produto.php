@@ -143,6 +143,18 @@ class Produto
             'id_produto' => $id_produto
         ]);
     }
+    public function atualizarEstoque($id_produto, $quantidade)
+    {
+        $sql = "UPDATE produtos
+                SET estoque_atual = estoque_atual + :quantidade
+                WHERE id_produto = :id_produto AND controlar_estoque = 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'quantidade' => $quantidade,
+            'id_produto' => $id_produto
+        ]);
+    }
+
 }
 
 

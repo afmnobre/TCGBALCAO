@@ -122,29 +122,46 @@ class Pedido
         }
     }
 
-    public function atualizarItens($id_pedido, $itens) {
-        $stmtDel = $this->db->prepare("DELETE FROM pedidos_itens WHERE id_pedido = :id_pedido");
-        $stmtDel->execute(['id_pedido' => $id_pedido]);
+public function atualizarItens($id_pedido, $itens) {
+    // antes de deletar, recuperar itens antigos para devolver estoque
+    $stmtOld = $this->db->prepare("SELECT id_produto, quantidade FROM pedidos_itens WHERE id_pedido = :id_pedido");
+    $stmtOld->execute(['id_pedido' => $id_pedido]);
+    $itensAntigos = $stmtOld->fetchAll(PDO::FETCH_ASSOC);
 
-        foreach ($itens as $id_produto => $quantidade) {
-            if ($quantidade > 0) {
-                $stmtProd = $this->db->prepare("SELECT valor_venda FROM produtos WHERE id_produto = :id_produto");
-                $stmtProd->execute(['id_produto' => $id_produto]);
-                $valor_unitario = $stmtProd->fetchColumn();
-
-                $stmtItem = $this->db->prepare("
-                    INSERT INTO pedidos_itens (id_pedido, id_produto, quantidade, valor_unitario)
-                    VALUES (:id_pedido, :id_produto, :quantidade, :valor_unitario)
-                ");
-                $stmtItem->execute([
-                    'id_pedido'      => $id_pedido,
-                    'id_produto'     => $id_produto,
-                    'quantidade'     => $quantidade,
-                    'valor_unitario' => $valor_unitario
-                ]);
-            }
+    $produtoModel = new Produto();
+    foreach ($itensAntigos as $itemAntigo) {
+        if ($itemAntigo['quantidade'] > 0) {
+            $produtoModel->atualizarEstoque($itemAntigo['id_produto'], $itemAntigo['quantidade']); // devolve estoque
         }
     }
+
+    // limpa itens
+    $stmtDel = $this->db->prepare("DELETE FROM pedidos_itens WHERE id_pedido = :id_pedido");
+    $stmtDel->execute(['id_pedido' => $id_pedido]);
+
+    // insere novos itens e retira do estoque
+    foreach ($itens as $id_produto => $quantidade) {
+        if ($quantidade > 0) {
+            $stmtProd = $this->db->prepare("SELECT valor_venda FROM produtos WHERE id_produto = :id_produto");
+            $stmtProd->execute(['id_produto' => $id_produto]);
+            $valor_unitario = $stmtProd->fetchColumn();
+
+            $stmtItem = $this->db->prepare("
+                INSERT INTO pedidos_itens (id_pedido, id_produto, quantidade, valor_unitario)
+                VALUES (:id_pedido, :id_produto, :quantidade, :valor_unitario)
+            ");
+            $stmtItem->execute([
+                'id_pedido'      => $id_pedido,
+                'id_produto'     => $id_produto,
+                'quantidade'     => $quantidade,
+                'valor_unitario' => $valor_unitario
+            ]);
+
+            $produtoModel->atualizarEstoque($id_produto, -$quantidade); // retira estoque
+        }
+    }
+}
+
 
     public function zerarPedido($id_pedido)
     {
@@ -164,14 +181,29 @@ class Pedido
         $stmtItens->execute(['id_pedido' => $id_pedido]);
     }
 
-    public function excluir($id_pedido)
-    {
-        $stmtItens = $this->db->prepare("DELETE FROM pedidos_itens WHERE id_pedido = :id_pedido");
-        $stmtItens->execute(['id_pedido' => $id_pedido]);
+public function excluir($id_pedido)
+{
+    // devolve estoque antes de excluir
+    $stmtItens = $this->db->prepare("SELECT id_produto, quantidade FROM pedidos_itens WHERE id_pedido = :id_pedido");
+    $stmtItens->execute(['id_pedido' => $id_pedido]);
+    $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
 
-        $stmtPedido = $this->db->prepare("DELETE FROM pedidos WHERE id_pedido = :id_pedido");
-        $stmtPedido->execute(['id_pedido' => $id_pedido]);
+    $produtoModel = new Produto();
+    foreach ($itens as $item) {
+        if ($item['quantidade'] > 0) {
+            $produtoModel->atualizarEstoque($item['id_produto'], $item['quantidade']); // devolve estoque
+        }
     }
+
+    // exclui itens
+    $stmtDelItens = $this->db->prepare("DELETE FROM pedidos_itens WHERE id_pedido = :id_pedido");
+    $stmtDelItens->execute(['id_pedido' => $id_pedido]);
+
+    // exclui pedido
+    $stmtPedido = $this->db->prepare("DELETE FROM pedidos WHERE id_pedido = :id_pedido");
+    $stmtPedido->execute(['id_pedido' => $id_pedido]);
+}
+
 
     public function buscarPorIdRecibo($id_pedido)
     {
