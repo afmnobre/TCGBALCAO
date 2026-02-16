@@ -108,10 +108,12 @@
                            data-cliente="<?= $cliente['id_cliente'] ?>">
                     <button type="button" onclick="abrirPopupVariado(<?= $cliente['id_cliente'] ?>)">📝</button>
                 </td>
+<td id="total_<?= $cliente['id_cliente'] ?>" class="<?= $cliente['classe_total'] ?>">
+    <?= $pedidoCliente ? 'R$ '.number_format($pedidoCliente['valor_variado'],2,',','.') : 'R$ 0,00' ?>
+</td>
 
-                <td id="total_<?= $cliente['id_cliente'] ?>">
-                    <?= $pedidoCliente ? 'R$ '.number_format($pedidoCliente['valor_variado'],2,',','.') : 'R$ 0,00' ?>
-                </td>
+
+
 
                 <td>
                     <input type="checkbox"

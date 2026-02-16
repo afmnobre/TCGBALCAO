@@ -9,43 +9,125 @@ require_once __DIR__ . '/../../core/AuthMiddleware.php';
 class PedidoController extends Controller
 {
 
-    public function index()
-    {
-        AuthMiddleware::verificarLogin();
+public function index()
+{
+    AuthMiddleware::verificarLogin();
 
-        $pedidoModel  = new Pedido();
-        $clienteModel = new Cliente();
-        $produtoModel = new Produto();
+    $pedidoModel  = new Pedido();
+    $clienteModel = new Cliente();
+    $produtoModel = new Produto();
 
-        $clientes = $clienteModel->listarPorLoja($_SESSION['LOJA']['id']);
-        $produtos = $produtoModel->listarAtivosPorLoja($_SESSION['LOJA']['id']);
-        $cardgames = $pedidoModel->listarCardgames(); // 🔹 lista todos os cardgames
+    $clientes = $clienteModel->listarPorLoja($_SESSION['LOJA']['id']);
+    $produtos = $produtoModel->listarAtivosPorLoja($_SESSION['LOJA']['id']);
+    $cardgames = $pedidoModel->listarCardgames();
 
-        $hoje = date('Y-m-d');
-        $dataSelecionada = $_GET['data'] ?? $hoje;
+    $hoje = date('Y-m-d');
+    $dataSelecionada = $_GET['data'] ?? $hoje;
 
-        $pedidos = $pedidoModel->listarPorLojaDataTodos($_SESSION['LOJA']['id'], $dataSelecionada);
+    $pedidos = $pedidoModel->listarPorLojaDataTodos($_SESSION['LOJA']['id'], $dataSelecionada);
 
-        $pedidosPorCliente = [];
-        foreach ($pedidos as $p) {
-            $p['itens'] = $pedidoModel->listarItensPorPedido($p['id_pedido']);
-            $pedidosPorCliente[$p['id_cliente']][] = $p;
+    // 🔹 Remove pedidos zerados (sem itens, valor 0 e não pago)
+    foreach ($pedidos as $key => $p) {
+        $itens = $pedidoModel->listarItensPorPedido($p['id_pedido']);
+        $valorVariado = (float)($p['valor_variado'] ?? 0);
+
+        $temItens = false;
+        foreach ($itens as $item) {
+            if ((int)$item['quantidade'] > 0) {
+                $temItens = true;
+                break;
+            }
         }
 
-        // 🔹 Vincula cardgames a cada cliente
-        foreach ($clientes as &$cliente) {
-            $cliente['cardgames'] = $pedidoModel->listarCardgamesPorCliente($cliente['id_cliente']);
+        if (!$temItens && $valorVariado == 0 && $p['pedido_pago'] == 0) {
+            // exclui do banco
+            $pedidoModel->excluir($p['id_pedido']);
+            unset($pedidos[$key]); // remove do array
+        } else {
+            $p['itens'] = $itens;
+            $pedidos[$key] = $p;
         }
-
-        $this->view('pedido/index', [
-            'clientes'          => $clientes,
-            'produtos'          => $produtos,
-            'pedidosPorCliente' => $pedidosPorCliente,
-            'dataSelecionada'   => $dataSelecionada,
-            'datasPendentes'    => $pedidoModel->listarDatasPendentes($_SESSION['LOJA']['id']),
-            'cardgames'         => $cardgames
-        ]);
     }
+
+    $pedidosPorCliente = [];
+    foreach ($pedidos as $p) {
+        $pedidosPorCliente[$p['id_cliente']][] = $p;
+    }
+
+    // cria mapa de preços por produto
+    $mapaPrecos = [];
+    foreach ($produtos as $prod) {
+        $mapaPrecos[$prod['id_produto']] = (float)$prod['valor_venda'];
+    }
+
+    // Vincula cardgames e calcula classe de total
+    foreach ($clientes as &$cliente) {
+        $cliente['cardgames'] = $pedidoModel->listarCardgamesPorCliente($cliente['id_cliente']);
+
+        $id = $cliente['id_cliente'];
+        $classeTotal = '';
+
+        if (isset($pedidosPorCliente[$id])) {
+            $pedido = reset($pedidosPorCliente[$id]);
+
+            // calcula o valor total do pedido (variado + itens)
+            $valorTotal = (float)($pedido['valor_variado'] ?? 0);
+            if (!empty($pedido['itens'])) {
+                foreach ($pedido['itens'] as $item) {
+                    $idProd = $item['id_produto'];
+                    $preco  = $mapaPrecos[$idProd] ?? 0;
+                    $valorTotal += ($item['quantidade'] * $preco);
+                }
+            }
+
+            if ($valorTotal > 0) {
+                $classeTotal = ($pedido['pedido_pago'] == 1) ? 'total-pago' : 'total-aberto';
+            }
+        }
+
+        $cliente['classe_total'] = $classeTotal;
+    }
+    unset($cliente);
+
+    // Separar clientes em grupos
+    $clientesAbertos = [];
+    $clientesPagos   = [];
+    $clientesSem     = [];
+
+    foreach ($clientes as $cliente) {
+        $id = $cliente['id_cliente'];
+
+        if (isset($pedidosPorCliente[$id])) {
+            $pedido = reset($pedidosPorCliente[$id]);
+            if ($pedido['pedido_pago'] == 0) {
+                $clientesAbertos[] = $cliente;
+            } else {
+                $clientesPagos[] = $cliente;
+            }
+        } else {
+            $clientesSem[] = $cliente;
+        }
+    }
+
+    // Ordenar alfabeticamente cada grupo
+    usort($clientesAbertos, fn($a, $b) => strcmp($a['nome'], $b['nome']));
+    usort($clientesPagos, fn($a, $b) => strcmp($a['nome'], $b['nome']));
+    usort($clientesSem, fn($a, $b) => strcmp($a['nome'], $b['nome']));
+
+    // Juntar na ordem desejada
+    $clientesOrdenados = array_merge($clientesAbertos, $clientesPagos, $clientesSem);
+
+    $this->view('pedido/index', [
+        'clientes'          => $clientesOrdenados,
+        'produtos'          => $produtos,
+        'pedidosPorCliente' => $pedidosPorCliente,
+        'dataSelecionada'   => $dataSelecionada,
+        'datasPendentes'    => $pedidoModel->listarDatasPendentes($_SESSION['LOJA']['id']),
+        'cardgames'         => $cardgames
+    ]);
+}
+
+
 
     public function recibo($id)
     {

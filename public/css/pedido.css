@@ -4,4 +4,15 @@
     font-weight: bold;
     border: 2px solid #ff9900; /* borda laranja */
 }
+/* Fundo vermelho para pedidos em aberto */
+.total-aberto {
+    background-color: #ffcccc;
+    font-weight: bold;
+}
+
+/* Fundo verde para pedidos pagos */
+.total-pago {
+    background-color: #ccffcc;
+    font-weight: bold;
+}
 
