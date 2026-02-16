@@ -1,0 +1,7 @@
+/* Destaque para cabeçalho de produto em alerta de estoque */
+.estoque-alerta {
+    background-color: #ffeb99; /* amarelo claro */
+    font-weight: bold;
+    border: 2px solid #ff9900; /* borda laranja */
+}
+
