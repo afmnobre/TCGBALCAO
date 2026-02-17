@@ -20,7 +20,7 @@
 </button>
 
 <!-- Filtros de Cardgames -->
-<div style="margin:15px 0; padding:10px; border:1px solid #ccc; background:#f9f9f9;">
+<div class="filtro-cardgames">
     <strong>Filtrar por Cardgames:</strong><br>
     <?php foreach ($cardgames as $cardgame): ?>
         <?php

@@ -1,0 +1,142 @@
+body {
+    font-family: 'VT323', monospace;
+    background-color: #000;
+    color: #0f0;
+}
+
+header, footer {
+    font-family: 'Press Start 2P', cursive;
+    text-transform: uppercase;
+}
+
+nav a {
+    font-family: 'Press Start 2P', cursive;
+    color: #ff0;
+    text-decoration: none;
+    margin: 0 5px;              /* reduz espaço lateral */
+    border: 2px solid #ff0;
+    padding: 3px 6px;           /* metade do tamanho anterior */
+    font-size: 10px;            /* reduz fonte */
+    transition: 0.2s;
+}
+
+nav a:hover {
+    background-color: #ff0;
+    color: #000;
+    box-shadow: 0 0 6px #ff0;   /* brilho menor */
+}
+
+
+
+
+input, select, textarea {
+    font-family: 'VT323', monospace;
+    background-color: #111;
+    color: #0f0;
+    border: 2px solid #0f0;
+    padding: 8px;
+    width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #ff0;
+    box-shadow: 0 0 8px #ff0;
+}
+/* Ajuste global para textos */
+body, input, select, textarea, label, table, td, th {
+    line-height: 1.6;          /* aumenta o espaçamento vertical */
+    letter-spacing: 1px;       /* dá mais espaço entre letras */
+}
+
+/* Inputs estilo arcade */
+input, select, textarea {
+    font-family: 'VT323', monospace;
+    background-color: #111;
+    color: #0f0;
+    border: 2px solid #0f0;
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+    line-height: 1.6;          /* mais espaçamento dentro do campo */
+    letter-spacing: 1px;       /* mais espaço entre caracteres */
+}
+
+/* Labels estilo arcade */
+label {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 12px;
+    color: #ff0;
+    text-transform: uppercase;
+    line-height: 1.8;          /* aumenta espaçamento vertical */
+    letter-spacing: 2px;       /* mais espaço entre letras */
+}
+/* Header mais compacto */
+header {
+    padding: 8px; /* antes era 15px */
+    height: 50px; /* define altura menor */
+    display: flex;
+    align-items: center;
+}
+
+/* Nome da loja menor */
+header h1 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px; /* metade do tamanho anterior */
+    margin: 0;
+    line-height: 1.2;
+}
+/* Container do filtro */
+/* Container do filtro */
+.filtro-cardgames {
+    margin: 15px 0;
+    padding: 10px;
+    border: 1px solid #444;
+    background: #222; /* cinza escuro */
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #0f0;
+    font-family: 'VT323', monospace;
+    font-size: 12px; /* reduz fonte do container */
+}
+
+/* Labels inline */
+.filtro-cardgames label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    font-size: 8px; /* metade do tamanho anterior */
+    color: #ff0;
+    font-family: 'Press Start 2P', cursive;
+}
+
+/* Checkbox estilo arcade */
+.filtro-cardgames input[type="checkbox"] {
+    accent-color: #0ff;
+    transform: scale(1.1); /* levemente maior para compensar fonte menor */
+}
+/* Botão arcade global para todas as ações */
+.btn-arcade {
+    font-family: 'Press Start 2P', cursive;
+    background-color: var(--loja-color); /* cor dinâmica da loja */
+    color: #000;
+    border: 2px solid var(--loja-color);
+    padding: 6px 12px;
+    font-size: 10px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-arcade:hover {
+    background-color: #000;
+    color: var(--loja-color);
+    box-shadow: 0 0 8px var(--loja-color);
+}
+
+
+

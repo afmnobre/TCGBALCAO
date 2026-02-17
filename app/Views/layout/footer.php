@@ -1,22 +1,19 @@
 <?php
 $loja = $_SESSION['LOJA'] ?? [];
 
-$idLoja    = $loja['id_loja'] ?? 0;
-$corFooter = $loja['cor_tema'] ?? '#eee';
-$favicon   = $loja['favicon'] ?? 'favicon.ico';
+$idLoja      = $loja['id_loja'] ?? 0;
+$corFooter   = $loja['cor_tema'] ?? '#eee';
+$faviconFile = $loja['favicon'] ?? 'favicon.ico'; // pega o nome do banco
 
-$faviconPath = "/storage/uploads/{$idLoja}/{$favicon}";
+$faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
 ?>
 <footer style="background-color: <?= htmlspecialchars($corFooter) ?>; text-align:center; padding:10px;">
     <small>© <?= date('Y') ?> - <?= htmlspecialchars($loja['nome_loja'] ?? 'TCGBalcão') ?></small>
-    <?php if ($favicon): ?>
-        <div style="margin-top:5px;">
-            <img src="<?= htmlspecialchars($faviconPath) ?>" alt="Favicon da Loja" height="20">
-        </div>
-    <?php endif; ?>
+    <div style="margin-top:5px;">
+        <img src="<?= htmlspecialchars($faviconPath) ?>" alt="Favicon da Loja" height="20">
+    </div>
 </footer>
 </main>
 </body>
 </html>
-
 
