@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/layout/header.php'; ?>
 
-<div class="container">
+
     <h2>Clientes Inativos (mais de 2 meses)</h2>
 
     <table class="table table-striped table-bordered">
@@ -35,7 +35,7 @@
             <?php endif; ?>
         </tbody>
     </table>
-</div>
+
 
 <?php require_once __DIR__ . '/layout/footer.php'; ?>
 

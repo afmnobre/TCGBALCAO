@@ -1,3 +1,4 @@
+</div>
 <?php
 $loja = $_SESSION['LOJA'] ?? [];
 
@@ -8,10 +9,10 @@ $faviconFile = $loja['favicon'] ?? 'favicon.ico'; // pega o nome do banco
 $faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
 ?>
 <footer style="background-color: <?= htmlspecialchars($corFooter) ?>; text-align:center; padding:10px;">
-    <small>© <?= date('Y') ?> - <?= htmlspecialchars($loja['nome_loja'] ?? 'TCGBalcão') ?></small>
     <div style="margin-top:5px;">
         <img src="<?= htmlspecialchars($faviconPath) ?>" alt="Favicon da Loja" height="20">
-    </div>
+    </div> &nbsp;&nbsp;
+    <small>© <?= date('Y') ?> - <?= htmlspecialchars($loja['nome_loja'] ?? 'TCGBalcão') ?></small>
 </footer>
 </main>
 </body>

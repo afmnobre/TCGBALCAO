@@ -1,4 +1,4 @@
-<div class="container">
+
     <h1>📊 Dashboard de Relatórios</h1>
 
     <!-- KPIs rápidos -->
@@ -37,7 +37,7 @@
 
     <!-- Gráfico de Pizza -->
     <canvas id="topProdutosChart"></canvas>
-</div>
+
 
 <!-- Chart.js + Plugin -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

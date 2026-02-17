@@ -21,6 +21,9 @@ $faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/public/css/arcade.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap" rel="stylesheet">
 
 </head>
 <body>
@@ -31,15 +34,16 @@ $faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
             <h1><?= htmlspecialchars($nomeLoja) ?></h1>
         </div>
         <nav>
-            <a href="/home">🏠 Home</a>
-            <a href="/pedido">📦 Pedidos</a>
-            <a href="/cliente">👥 Clientes</a>
-            <a href="/produto">🎴 Produtos & Estoque</a>
-            <a href="/relatorio">📊 Relatórios</a>
-            <a href="/logout">🚪 Logout</a>
+            <a href="/home">Home</a>
+            <a href="/pedido">Pedidos</a>
+            <a href="/cliente">Clientes</a>
+            <a href="/produto">Produtos & Estoque</a>
+            <a href="/relatorio">Relatórios</a>
+            <a href="/logout">Logout</a>
         </nav>
     </div>
 </header>
-<main>
+<div class="main-container">
+
 
 

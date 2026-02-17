@@ -270,7 +270,9 @@ public function excluir($id_pedido)
      */
     public function listarCardgames()
     {
-        $sql = "SELECT id_cardgame, nome FROM cardgames ORDER BY nome ASC";
+        $sql = "SELECT id_cardgame, nome, imagem_fundo_card, imagem_card_game
+                FROM cardgames
+                ORDER BY nome ASC";
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

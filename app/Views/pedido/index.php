@@ -15,27 +15,28 @@
     </div>
 </div>
 
-<button type="submit" form="formPedidos" style="background:red; color:white; padding:10px 20px; border:none; cursor:pointer;">
-    Salvar Pedidos
-</button>
-
 <!-- Filtros de Cardgames -->
 <div class="filtro-cardgames">
-    <strong>Filtrar por Cardgames:</strong><br>
+    <strong>Filtrar por Cardgames:</strong>
     <?php foreach ($cardgames as $cardgame): ?>
-        <?php
-            $checked = in_array($cardgame['id_cardgame'], ($_GET['cardgames'] ?? [])) ? 'checked' : '';
-        ?>
-        <label style="margin-right:10px;">
+        <?php $checked = in_array($cardgame['id_cardgame'], ($_GET['cardgames'] ?? [])) ? 'checked' : ''; ?>
+        <label class="cardgame-item">
             <input type="checkbox"
                    name="cardgames[]"
                    value="<?= $cardgame['id_cardgame'] ?>"
                    <?= $checked ?>
                    onchange="filtrarClientes()">
-            <?= htmlspecialchars($cardgame['nome']) ?>
+            <div class="cardgame-thumb"
+                 style="background-image: url('/public/images/cartas_fundo/<?= htmlspecialchars($cardgame['imagem_fundo_card']) ?>');">
+                <span class="cardgame-name"><?= htmlspecialchars($cardgame['nome']) ?></span>
+            </div>
         </label>
     <?php endforeach; ?>
 </div>
+
+<button type="submit" form="formPedidos" style="background:red; color:white; padding:10px 20px; border:none; cursor:pointer;">
+    Salvar Pedidos
+</button>
 
 <form id="formPedidos" method="POST" action="/pedido/salvar">
     <!-- Hidden para enviar a data selecionada -->
