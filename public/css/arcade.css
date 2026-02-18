@@ -1,8 +1,14 @@
 /* Fonte global para views */
-body {
-    font-family: 'DM Mono', monospace;
-    background-color: #000;
-    color: #0f0;
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+.main-container {
+    padding: 0 25px; /* espaçamento lateral */
+    box-sizing: border-box; /* inclui padding na largura */
+    width: 100%; /* ocupa toda a largura */
+    background-color: #000; /* mantém fundo arcade */
 }
 
 /* Cabeçalho e rodapé arcade */
@@ -21,16 +27,6 @@ header h1 {
     margin: 0;
     line-height: 1.2;
 }
-
-/* Container global para todas as views */
-.container-view {
-    margin: 0 auto;        /* centraliza horizontalmente */
-    padding-left: 5px;     /* espaçamento lateral esquerdo */
-    padding-right: 5px;    /* espaçamento lateral direito */
-    max-width: 1200px;     /* largura máxima opcional */
-    box-sizing: border-box;
-}
-
 
 /* Navegação arcade */
 nav a {
@@ -137,8 +133,8 @@ footer {
 }
 
 .cardgame-thumb {
-    width: 80px;
-    height: 100px;
+    width: 60px;
+    height: 60px;
     background-size: cover;
     background-position: center;
     border: 2px solid #0ff;
@@ -158,6 +154,46 @@ footer {
     padding: 2px;
 }
 
+.linha-relatorio {
+    display: flex;
+    gap: 20px;              /* aumenta o espaçamento central entre colunas */
+    margin: 25px 0;         /* espaçamento vertical entre linhas */
+}
 
+.linha-relatorio .coluna {
+    flex: 1;
+    background: #111;
+    padding: 15px;
+    border: 2px solid #444; /* borda entre os elementos */
+    box-sizing: border-box;
+}
+
+.linha-relatorio h2 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 12px;
+    color: #ff0;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #444; /* separador visual no título */
+    padding-bottom: 5px;
+}
+
+.btn-link {
+    display: inline-block;
+    background: black;
+    color: yellow;
+    padding: 10px 20px;
+    border: 2px solid yellow;
+    border-radius: 4px;
+    text-decoration: none;   /* remove sublinhado */
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.btn-link:hover {
+    background: yellow;
+    color: black;
+}
 
 

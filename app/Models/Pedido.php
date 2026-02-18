@@ -199,10 +199,15 @@ public function excluir($id_pedido)
     $stmtDelItens = $this->db->prepare("DELETE FROM pedidos_itens WHERE id_pedido = :id_pedido");
     $stmtDelItens->execute(['id_pedido' => $id_pedido]);
 
+    // exclui pagamentos vinculados
+    $stmtDelPagamentos = $this->db->prepare("DELETE FROM pedido_pagamento WHERE id_pedido = :id_pedido");
+    $stmtDelPagamentos->execute(['id_pedido' => $id_pedido]);
+
     // exclui pedido
     $stmtPedido = $this->db->prepare("DELETE FROM pedidos WHERE id_pedido = :id_pedido");
     $stmtPedido->execute(['id_pedido' => $id_pedido]);
 }
+
 
 
     public function buscarPorIdRecibo($id_pedido)
@@ -257,13 +262,16 @@ public function excluir($id_pedido)
                 pedido_pago = :pedido_pago
             WHERE id_pedido = :id_pedido
         ");
+
         $stmt->execute([
-            'valor_variado'      => $dados['valor_variado'],
+            'valor_variado'      => (float)($dados['valor_variado'] ?? 0),
             'observacao_variado' => $dados['observacao_variado'] ?? null,
-            'pedido_pago'        => $dados['pedido_pago'],
-            'id_pedido'          => $id_pedido
+            'pedido_pago'        => (int)($dados['pedido_pago'] ?? 0),
+            'id_pedido'          => (int)$id_pedido
         ]);
+
     }
+
 
     /**
      * Lista todos os cardgames cadastrados
@@ -290,5 +298,33 @@ public function excluir($id_pedido)
         $stmt->execute(['id_cliente' => $id_cliente]);
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
+     public function listarTiposPagamento() {
+     $sql = "SELECT * FROM tipos_pagamento ORDER BY nome ASC";
+     $stmt = $this->db->query($sql);
+     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+     }
+        // Buscar todos os pedidos
+    public function listarPedidos() {
+        $sql = "SELECT * FROM pedidos ORDER BY id_pedido DESC";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+public function salvarTiposPagamento($idPedido, $pagamentos) {
+    $sqlDelete = "DELETE FROM pedido_pagamento WHERE id_pedido = :id_pedido";
+    $stmtDelete = $this->db->prepare($sqlDelete);
+    $stmtDelete->bindValue(':id_pedido', $idPedido, PDO::PARAM_INT);
+    $stmtDelete->execute();
+
+    $sqlInsert = "INSERT INTO pedido_pagamento (id_pedido, id_pagamento) VALUES (:id_pedido, :id_pagamento)";
+    $stmtInsert = $this->db->prepare($sqlInsert);
+
+    foreach ($pagamentos as $idPagamento) {
+        $stmtInsert->bindValue(':id_pedido', $idPedido, PDO::PARAM_INT);
+        $stmtInsert->bindValue(':id_pagamento', $idPagamento, PDO::PARAM_INT);
+        $stmtInsert->execute();
+    }
+}
+
 }
 

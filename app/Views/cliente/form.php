@@ -1,8 +1,13 @@
 <h2><?= isset($cliente) ? 'Editar Cliente' : 'Cadastrar Cliente' ?></h2>
 
 <form method="POST" action="<?= isset($cliente) ? '/cliente/atualizar/'.$cliente['id_cliente'] : '/cliente/salvar' ?>">
-    <label>Telefone (Celular):</label>
-    <input type="text" name="telefone" value="<?= $cliente['telefone'] ?? '' ?>" required><br>
+<label>Telefone (Celular):</label>
+<input type="text" id="telefone" name="telefone"
+    value="<?= $cliente['telefone'] ?? '' ?>"
+    maxlength="15" required>
+<span id="statusCliente"></span><br>
+
+
 
     <label>Nome:</label>
     <input type="text" name="nome" value="<?= $cliente['nome'] ?? '' ?>"><br>
@@ -23,6 +28,6 @@
         <p>Nenhum cardgame cadastrado.</p>
     <?php endif; ?>
 
-    <button type="submit">Salvar</button>
+    <button class="btn-link" type="submit">Salvar</button>
 </form>
 

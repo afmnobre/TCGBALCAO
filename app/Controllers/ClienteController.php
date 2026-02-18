@@ -62,10 +62,14 @@ class ClienteController extends Controller
     {
         $clienteModel = new Cliente();
 
+        // limpa o telefone antes de salvar
+        $telefone = $_POST['telefone'] ?? '';
+        $telefone = preg_replace('/\D/', '', $telefone); // remove tudo que não for número
+
         $dadosCliente = [
             'nome'     => $_POST['nome'],
             'email'    => $_POST['email'],
-            'telefone' => $_POST['telefone']
+            'telefone' => $telefone
         ];
 
         $id_loja   = $_SESSION['LOJA']['id_loja'];
@@ -83,14 +87,19 @@ class ClienteController extends Controller
         exit;
     }
 
+
     public function atualizar($id)
     {
         $clienteModel = new Cliente();
 
+        // limpa o telefone antes de atualizar
+        $telefone = $_POST['telefone'] ?? '';
+        $telefone = preg_replace('/\D/', '', $telefone); // remove tudo que não for número
+
         $dadosCliente = [
             'nome'     => $_POST['nome'],
             'email'    => $_POST['email'],
-            'telefone' => $_POST['telefone']
+            'telefone' => $telefone
         ];
 
         $cardgames = $_POST['cardgames'] ?? [];
@@ -102,13 +111,41 @@ class ClienteController extends Controller
         exit;
     }
 
-    public function excluir($id)
-    {
-        $clienteModel = new Cliente();
-        $clienteModel->excluir($id, $_SESSION['LOJA']['id_loja']);
+public function verificarTelefone()
+{
+    header('Content-Type: application/json; charset=utf-8');
 
-        header('Location: /cliente');
-        exit;
+    $telefone = preg_replace('/\D/', '', $_GET['telefone'] ?? '');
+
+    if (empty($telefone)) {
+        echo json_encode(["encontrado" => false]);
+        return;
     }
+
+    // Caminho correto para o model
+    require_once __DIR__ . "/../Models/Cliente.php";
+    $clienteModel = new Cliente();
+
+    $cliente = $clienteModel->buscarPorTelefone($telefone);
+
+    if ($cliente) {
+        echo json_encode([
+            "encontrado" => true,
+            "nome" => $cliente['nome'],
+            "email" => $cliente['email'],
+            "telefone" => $cliente['telefone']
+        ]);
+    } else {
+        echo json_encode(["encontrado" => false]);
+    }
+}
+
+
+
+
+
+
+
+
 }
 

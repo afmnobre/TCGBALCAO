@@ -1,6 +1,6 @@
 <h2>Produtos da Loja</h2>
 
-<a href="/produto/criar">➕ Novo Produto</a>
+<a href="/produto/criar" class="btn-link">➕ Novo Produto</a>
 
 <form method="POST" action="/produto/salvarOrdem">
 <table>
@@ -36,17 +36,17 @@
                 </select>
             </td>
             <td>
-                <a href="/produto/editar/<?= $produto['id_produto'] ?>">✏️ Editar</a>
+                <a class="btn-link" href="/produto/editar/<?= $produto['id_produto'] ?>">✏️ Editar</a>
                 <?php if ($produto['ativo'] == 1): ?>
-                    <a href="/produto/desativar/<?= $produto['id_produto'] ?>">🚫 Desativar</a>
+                    <a class="btn-link" href="/produto/desativar/<?= $produto['id_produto'] ?>">🚫 Desativar</a>
                 <?php else: ?>
-                    <a href="/produto/ativar/<?= $produto['id_produto'] ?>">✅ Ativar</a>
+                    <a class="btn-link" href="/produto/ativar/<?= $produto['id_produto'] ?>">✅ Ativar</a>
                 <?php endif; ?>
             </td>
         </tr>
     <?php endforeach; ?>
 </table>
 
-<button type="submit">Salvar Ordem</button>
+<button class="btn-link" type="submit">Salvar Ordem</button>
 </form>
 

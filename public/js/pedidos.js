@@ -64,7 +64,10 @@ function abrirRecibo(idPedido) {
     const modal = document.getElementById('modalRecibo');
     const iframe = document.getElementById('iframeRecibo');
 
+    // Define o caminho do recibo.php
     iframe.src = '/pedido/recibo/' + idPedido;
+
+    // Exibe o modal
     modal.style.display = 'block';
 }
 
@@ -73,8 +76,16 @@ function fecharRecibo() {
     const iframe = document.getElementById('iframeRecibo');
 
     modal.style.display = 'none';
-    iframe.src = '';
+    iframe.src = ''; // limpa o iframe
 }
+
+function imprimirRecibo() {
+    const iframe = document.getElementById('iframeRecibo');
+    // Foca no conteúdo do iframe e imprime apenas ele
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+}
+
 
 function calcularTotal(clienteId) {
     let total = 0;
@@ -198,5 +209,71 @@ document.getElementById('dataPedido').addEventListener('change', function() {
 
 // Inicializa o hidden com o valor atual do calendário
 document.getElementById('dataSelecionadaHidden').value = document.getElementById('dataPedido').value;
+
+function abrirModalPagamento(idPedido, idCliente) {
+    const modal = document.getElementById('modalPagamento');
+    modal.style.display = 'flex';
+
+    // IDs
+    document.getElementById('modal_id_pedido').value = idPedido;
+    document.getElementById('modal_id_cliente').value = idCliente;
+
+    const form = modal.querySelector('form');
+
+    // Remove campos antigos
+    form.querySelectorAll('input[name^="variado"], input[name^="observacao_variado"], input[name^="itens"]').forEach(el => el.remove());
+
+    // Copia variado
+    const campoVariado = document.querySelector(`input[name="variado[${idCliente}]"]`);
+    if (campoVariado) {
+        const hiddenVariado = document.createElement('input');
+        hiddenVariado.type = 'hidden';
+        hiddenVariado.name = `variado[${idCliente}]`;
+        hiddenVariado.value = campoVariado.value;
+        form.appendChild(hiddenVariado);
+    }
+
+    // Copia observação
+    const campoObs = document.getElementById(`observacao_variado_${idCliente}`);
+    if (campoObs) {
+        const hiddenObs = document.createElement('input');
+        hiddenObs.type = 'hidden';
+        hiddenObs.name = `observacao_variado[${idCliente}]`;
+        hiddenObs.value = campoObs.value;
+        form.appendChild(hiddenObs);
+    }
+
+    // Copia itens
+    document.querySelectorAll(`input[name^="itens[${idCliente}]"]`).forEach(input => {
+        const clone = document.createElement('input');
+        clone.type = 'hidden';
+        clone.name = input.name;
+        clone.value = input.value;
+        form.appendChild(clone);
+    });
+}
+
+
+
+function fecharModalPagamento() {
+    const modal = document.getElementById('modalPagamento');
+    if (modal) modal.style.display = 'none';
+}
+
+function salvarPagamento() {
+    const form = document.getElementById('formPagamento');
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: form.method,
+        body: formData
+    })
+    .then(res => res.text())
+    .then(() => {
+        fecharModalPagamento();
+        location.reload();
+    })
+    .catch(err => console.error("Erro ao salvar pagamento:", err));
+}
 
 

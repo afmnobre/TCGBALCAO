@@ -29,6 +29,6 @@
     <label>Fornecedor ID:</label><br>
     <input type="number" name="id_fornecedor" value="<?= $produto['id_fornecedor'] ?? '' ?>"><br><br>
 
-    <button type="submit">Salvar</button>
+    <button type="submit" class="btn-link">Salvar</button>
 </form>
 

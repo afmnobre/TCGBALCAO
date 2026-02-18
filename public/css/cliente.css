@@ -1,0 +1,30 @@
+/* Container flexível para exibir imagens lado a lado */
+.cliente-cardgames {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Miniatura de cada cardgame */
+.cliente-cardgame-thumb {
+    width: 60px;
+    height: 60px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 6px;
+    position: relative;
+    cursor: default;
+}
+
+/* Nome sobreposto na imagem */
+.cliente-cardgame-name {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    font-size: 10px;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+    text-align: center;
+}
+

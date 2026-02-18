@@ -4,19 +4,12 @@ class Router
 {
     public function run()
     {
-        $url = $_GET['url'] ?? 'home/index';
-        $url = explode('/', trim($url, '/'));
-
-        // DEBUG VISUAL (remover depois)
-        echo "<div style='background:#000;color:#0f0;padding:5px;font-size:12px'>
-        URL: ".implode('/', $url)."</div>";
+        $urlParam = $_GET['url'] ?? 'home/index';
+        $url = explode('/', trim($urlParam, '/'));
 
         $controllerBase = strtolower($url[0]);
         $controllerName = ucfirst($controllerBase) . 'Controller';
-        $method = $url[1] ?? 'index';
-
-        echo "<div style='background:#000;color:#0ff;padding:5px;font-size:12px'>
-        Controller: {$controllerName} | Método: {$method}</div>";
+        $method = $url[1] ?? 'index'; // corrigido
 
         $controllerPath = __DIR__ . "/../app/Controllers/{$controllerName}.php";
 
@@ -32,7 +25,6 @@ class Router
             die("Método não encontrado: {$method}");
         }
 
-        // Captura parâmetros adicionais da URL (ex: /produtos/editar/3)
         $params = array_slice($url, 2);
 
         if (!empty($params)) {
@@ -42,4 +34,5 @@ class Router
         }
     }
 }
+
 

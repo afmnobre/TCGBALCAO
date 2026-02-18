@@ -168,6 +168,12 @@ class Cliente
         $stmt->execute(['id_cliente' => $id_cliente]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
+    public function buscarPorTelefone($telefone)
+    {
+        $sql = "SELECT * FROM clientes WHERE telefone = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$telefone]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }
 

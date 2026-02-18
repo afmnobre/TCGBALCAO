@@ -34,7 +34,7 @@
     <?php endforeach; ?>
 </div>
 
-<button type="submit" form="formPedidos" style="background:red; color:white; padding:10px 20px; border:none; cursor:pointer;">
+<button type="submit" form="formPedidos" class="btn-link">
     Salvar Pedidos
 </button>
 
@@ -62,7 +62,7 @@
                 ?>
                 <th class="<?= $classeEstoque ?>"> <?= htmlspecialchars($produto['emoji']) ?>  <?= htmlspecialchars($produto['nome']) ?></th>
             <?php endforeach; ?>
-            <th>Variado</th>
+            <th>💰 Variado</th>
             <th>Total</th>
             <th>Pago?</th>
             <th>Recibo</th>
@@ -109,17 +109,15 @@
                            data-cliente="<?= $cliente['id_cliente'] ?>">
                     <button type="button" onclick="abrirPopupVariado(<?= $cliente['id_cliente'] ?>)">📝</button>
                 </td>
-<td id="total_<?= $cliente['id_cliente'] ?>" class="<?= $cliente['classe_total'] ?>">
-    <?= $pedidoCliente ? 'R$ '.number_format($pedidoCliente['valor_variado'],2,',','.') : 'R$ 0,00' ?>
-</td>
-
-
-
-
+                <td id="total_<?= $cliente['id_cliente'] ?>" class="<?= $cliente['classe_total'] ?>">
+                    <?= $pedidoCliente ? 'R$ '.number_format($pedidoCliente['valor_variado'],2,',','.') : 'R$ 0,00' ?>
+                </td>
                 <td>
-                    <input type="checkbox"
-                           name="pago[<?= $cliente['id_cliente'] ?>]"
-                           <?= ($pedidoCliente && $pedidoCliente['pedido_pago'] == 1) ? 'checked' : '' ?>>
+<input type="checkbox"
+       name="pago[<?= $cliente['id_cliente'] ?>]"
+       onchange="abrirModalPagamento(<?= $pedidoCliente['id_pedido'] ?? 0 ?>, <?= $cliente['id_cliente'] ?>)"
+       <?= ($pedidoCliente && $pedidoCliente['pedido_pago'] == 1) ? 'checked' : '' ?>>
+
                 </td>
 
                 <td style="text-align:center">
@@ -137,23 +135,61 @@
         <?php endforeach; ?>
     </table>
 </form>
-
+<br><br>
 <!-- Popup variado -->
-<div id="popupVariado" style="display:none; position:fixed; top:20%; left:30%; background:#fff; border:1px solid #ccc; padding:20px;">
-    <h3>Descrição do Valor Variado</h3>
-    <textarea id="descricaoVariado" rows="5" cols="40"></textarea><br><br>
-    <button onclick="salvarDescricaoVariado()">Salvar</button>
-    <button onclick="fecharPopupVariado()">Fechar</button>
+<div id="popupVariado" class="popup-variado">
+    <div class="popup-content">
+        <h3>Descrição do Valor Variado</h3>
+        <textarea id="descricaoVariado" rows="5" cols="40"></textarea><br><br>
+        <button onclick="salvarDescricaoVariado()">Salvar</button>
+        <button onclick="fecharPopupVariado()">Fechar</button>
+    </div>
 </div>
+
 
 <!-- Modal recibo -->
 <div id="modalRecibo" style="display:none; position:fixed; top:5%; left:50%; transform:translateX(-50%);
      background:#fff; border:1px solid #ccc; padding:10px; width:460px; height:680px; z-index:9999;">
     <div style="text-align:right;">
         <button onclick="fecharRecibo()">Fechar ✖</button>
+        <button onclick="imprimirRecibo()">Imprimir 🖨️</button>
     </div>
     <iframe id="iframeRecibo" src="" style="width:100%; height:95%; border:none;"></iframe>
 </div>
+
+<!-- Modal Metodo de Pagamento - POPUP -->
+<!-- Modal Metodo de Pagamento - POPUP -->
+<div id="modalPagamento" class="popup-variado" style="display:none;">
+  <div class="popup-content">
+    <form id="formPagamento" method="POST" action="/pedido/salvarPagamento">
+      <input type="hidden" id="modal_id_pedido" name="id_pedido[]" value="">
+      <input type="hidden" id="modal_id_cliente" name="id_cliente" value="">
+      <input type="hidden" name="dataSelecionada" value="<?= $dataSelecionada ?>">
+
+      <!-- Aqui o JS vai injetar variado, observação e itens dinamicamente -->
+
+      <!-- Tipos de pagamento -->
+      <div class="popup-grid">
+        <?php foreach ($tipos_pagamento as $tp): ?>
+          <label class="popup-option">
+            <input type="checkbox" name="pagamentos[]" value="<?= $tp['id_pagamento'] ?>">
+            <?= htmlspecialchars($tp['nome']) ?>
+          </label>
+        <?php endforeach; ?>
+      </div>
+
+      <div class="popup-actions">
+        <button type="button" onclick="salvarPagamento()">Salvar</button>
+        <button type="button" onclick="fecharModalPagamento()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="/public/css/pedido.css">

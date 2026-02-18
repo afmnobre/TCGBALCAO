@@ -1,43 +1,45 @@
-body {
-    font-family: Arial, sans-serif;
-    font-size: 12px;
-    width: 280px;
-    margin: auto;
+.recibo {
+    font-family: monospace;
+    font-size: 12px; /* tamanho padrão para recibo */
+    width: 280px;    /* largura típica de impressora térmica */
+    margin: 0 auto;
+}
+
+.logo {
+    text-align: center !important;
+    margin: 10px 0;
 }
 
 .logo img {
     max-width: 100px;
-    margin-bottom: 10px;
-}
-
-h2 {
-    text-align: center;
-    margin: 5px 0;
+    height: auto;
+    display: inline-block;
 }
 
 .small {
     font-size: 10px;
-    text-align: center;
 }
 
-hr {
-    border: 1px dashed #000;
+.t-left { text-align: left; }
+.t-right { text-align: right; }
+.total { font-weight: bold; }
+
+.cut {
+    border: none;
+    border-top: 1px dashed #000;
     margin: 10px 0;
 }
 
-h3 {
-    text-align: center;
-    margin: 10px 0;
-}
-
-table {
+/* Estilo exclusivo para a tabela de itens do recibo */
+table.recibo-itens {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    font-size: 8px; /* reduzido em dois terços (12px → 8px) */
 }
 
-table td {
-    padding: 5px;
-    border-bottom: 1px solid #ccc;
+table.recibo-itens th,
+table.recibo-itens td {
+    padding: 2px;
+    text-align: left;
 }
 

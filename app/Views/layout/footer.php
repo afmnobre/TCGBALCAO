@@ -13,6 +13,7 @@ $faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
         <img src="<?= htmlspecialchars($faviconPath) ?>" alt="Favicon da Loja" height="20">
     </div> &nbsp;&nbsp;
     <small>© <?= date('Y') ?> - <?= htmlspecialchars($loja['nome_loja'] ?? 'TCGBalcão') ?></small>
+    <script src="/public/js/cliente.js"></script>
 </footer>
 </main>
 </body>

@@ -6,13 +6,15 @@
 }
 /* Fundo vermelho para pedidos em aberto */
 .total-aberto {
-    background-color: #ffcccc;
+    background-color: #ff0000;
     font-weight: bold;
+    color: #fff; /* cor da fonte preta */
 }
 
 /* Fundo verde para pedidos pagos */
 .total-pago {
-    background-color: #ccffcc;
+    background-color: #00ff00;
     font-weight: bold;
+    color: #000; /* cor da fonte preta */
 }
 
