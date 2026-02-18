@@ -103,10 +103,11 @@
 
                 <td>
                     <input type="text"
-                           name="variado[<?= $cliente['id_cliente'] ?>]"
-                           value="<?= $pedidoCliente ? number_format($pedidoCliente['valor_variado'],2,',','.') : '0,00' ?>"
-                           style="width:80px;"
-                           data-cliente="<?= $cliente['id_cliente'] ?>">
+                        name="variado[<?= $cliente['id_cliente'] ?>]"
+                        value="<?= number_format((float)($pedidoCliente['valor_variado'] ?? 0), 2, ',', '.') ?>"
+                        style="width:80px;"
+                        data-cliente="<?= $cliente['id_cliente'] ?>">
+
                     <button type="button" onclick="abrirPopupVariado(<?= $cliente['id_cliente'] ?>)">📝</button>
                 </td>
                 <td id="total_<?= $cliente['id_cliente'] ?>" class="<?= $cliente['classe_total'] ?>">
@@ -158,7 +159,6 @@
 </div>
 
 <!-- Modal Metodo de Pagamento - POPUP -->
-<!-- Modal Metodo de Pagamento - POPUP -->
 <div id="modalPagamento" class="popup-variado" style="display:none;">
   <div class="popup-content">
     <form id="formPagamento" method="POST" action="/pedido/salvarPagamento">
@@ -185,11 +185,6 @@
     </form>
   </div>
 </div>
-
-
-
-
-
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="/public/css/pedido.css">

@@ -215,6 +215,7 @@ public function salvarPagamento() {
 
     // Normaliza valor variado
     $variado = $dados['variado'][$idCliente] ?? 0;
+    $variado = str_replace('.', '', $variado);
     $variado = str_replace(',', '.', $variado);
     if ($variado === '' || $variado === null) {
         $variado = 0;

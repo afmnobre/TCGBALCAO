@@ -100,7 +100,10 @@ function calcularTotal(clienteId) {
     // Somar variado
     const variadoInput = document.querySelector(`input[name="variado[${clienteId}]"]`);
     if (variadoInput) {
-        let variado = parseFloat(variadoInput.value.replace(',', '.')) || 0;
+        let valor = variadoInput.value;
+        // Remove separador de milhar e troca vírgula por ponto
+        valor = valor.replace(/\./g, '').replace(',', '.');
+        let variado = parseFloat(valor) || 0;
         total += variado;
     }
 
@@ -113,6 +116,7 @@ function calcularTotal(clienteId) {
     calcularTotalRecebido();
 }
 
+
 // LABEL do PEDIDO que mostra o total recebido no DIA.
 function calcularTotalRecebido() {
     let totalDia = 0;
@@ -122,7 +126,9 @@ function calcularTotalRecebido() {
         const checkboxPago = document.querySelector(`input[name="pago[${clienteId}]"]`);
 
         if (checkboxPago && checkboxPago.checked) {
-            const valorTexto = td.textContent.replace('R$', '').trim().replace('.', '').replace(',', '.');
+            let valorTexto = td.textContent.replace('R$', '').trim();
+            // Remove todos os pontos (separador de milhar) e troca vírgula por ponto
+            valorTexto = valorTexto.replace(/\./g, '').replace(',', '.');
             const valor = parseFloat(valorTexto) || 0;
             totalDia += valor;
         }
@@ -133,6 +139,7 @@ function calcularTotalRecebido() {
         totalRecebido.textContent = "R$ " + totalDia.toFixed(2).replace('.', ',');
     }
 }
+
 
 // Atualiza hidden de cardgames
 function atualizarHiddenCardgames() {
