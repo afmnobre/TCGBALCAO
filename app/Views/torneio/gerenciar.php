@@ -4,11 +4,19 @@
     $maxRodadas = ceil(log($numJogadores, 2));
 ?>
 <p>
-    <strong>Cardgame:</strong> <?= htmlspecialchars($torneio['cardgame_nome']) ?> |
+    <strong>Cardgame:</strong> <?= htmlspecialchars($torneio['cardgame']) ?>|
     <strong>Tipo:</strong> <?= htmlspecialchars($torneio['tipo_legivel'] ?? '') ?><br>
     <strong>Participantes:</strong> <?= $numJogadores ?><br>
     <strong>Total de Rodadas:</strong> <?= $maxRodadas ?>
 </p>
+
+<?php if (str_starts_with($torneio['tipo_torneio'], 'suico')): ?>
+    <button class="btn btn-sm btn-info" onclick="document.getElementById('popupRegrasSuico').style.display='block'">
+        📖 Regras do Torneio Suíço
+    </button>
+<?php endif; ?><hr>
+
+
 
 <!-- Timer da rodada -->
 <?php if (!empty($torneio['tempo_rodada'])): ?>
@@ -107,7 +115,6 @@ foreach ($rodadas as $rodada): ?>
         </tr>
     </table>
 </div>
-
         </div>
         <div class="card-body">
             <?php $pareamentos = $torneioModel->listarPareamentos($torneio['id_torneio'], $rodada['numero_rodada']); ?>
@@ -121,28 +128,52 @@ foreach ($rodadas as $rodada): ?>
                                 <th>Resultado</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php foreach ($pareamentos as $partida): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($partida['jogador1']) ?></td>
-                                    <td><?= htmlspecialchars($partida['jogador2']) ?></td>
-                                    <td>
-                                        <?php
-                                        switch ($partida['resultado']) {
-                                            case 'jogador1_2x0': echo "Vitória " . htmlspecialchars($partida['jogador1']) . " (2x0)"; break;
-                                            case 'jogador2_2x0': echo "Vitória " . htmlspecialchars($partida['jogador2']) . " (2x0)"; break;
-                                            case 'jogador1_2x1': echo "Vitória " . htmlspecialchars($partida['jogador1']) . " (2x1)"; break;
-                                            case 'jogador2_2x1': echo "Vitória " . htmlspecialchars($partida['jogador2']) . " (2x1)"; break;
-                                            case 'jogador1_vitoria': echo "Vitória " . htmlspecialchars($partida['jogador1']); break;
-                                            case 'jogador2_vitoria': echo "Vitória " . htmlspecialchars($partida['jogador2']); break;
-                                            case 'empate': echo "Empate"; break;
-                                            default: echo htmlspecialchars($partida['resultado']);
-                                        }
-                                        ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
+
+<tbody>
+<?php foreach ($pareamentos as $partida): ?>
+    <tr>
+        <td><?= htmlspecialchars($partida['jogador1'] ?? '') ?></td>
+        <td><?= $partida['jogador2'] ? htmlspecialchars($partida['jogador2']) : 'BY' ?></td>
+        <td>
+            <?php if (empty($partida['jogador2'])): ?>
+                Vitória <?= htmlspecialchars($partida['jogador1']) ?> (2x1 - BYE)
+            <?php else: ?>
+                <?php
+                switch ($partida['resultado']) {
+                    case 'jogador1_2x0':
+                        echo "Vitória " . htmlspecialchars($partida['jogador1']) . " (2x0)";
+                        break;
+                    case 'jogador2_2x0':
+                        echo "Vitória " . htmlspecialchars($partida['jogador2']) . " (2x0)";
+                        break;
+                    case 'jogador1_2x1':
+                        echo "Vitória " . htmlspecialchars($partida['jogador1']) . " (2x1)";
+                        break;
+                    case 'jogador2_2x1':
+                        echo "Vitória " . htmlspecialchars($partida['jogador2']) . " (2x1)";
+                        break;
+                    case 'jogador1_vitoria':
+                        echo "Vitória " . htmlspecialchars($partida['jogador1']);
+                        break;
+                    case 'jogador2_vitoria':
+                        echo "Vitória " . htmlspecialchars($partida['jogador2']);
+                        break;
+                    case 'empate':
+                        echo "Empate";
+                        break;
+                    default:
+                        echo "Resultado não disponível";
+                }
+                ?>
+            <?php endif; ?>
+        </td>
+    </tr>
+<?php endforeach; ?>
+</tbody>
+
+
+
+
                     </table>
                 <?php elseif (!$temRodadaComCombo): ?>
                     <form action="/torneio/salvarResultado/<?= $torneio['id_torneio'] ?>/<?= $rodada['id_rodada'] ?>" method="POST">
@@ -154,30 +185,39 @@ foreach ($rodadas as $rodada): ?>
                                     <th>Resultado</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <?php foreach ($pareamentos as $partida): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($partida['jogador1']) ?></td>
-                                        <td><?= htmlspecialchars($partida['jogador2']) ?></td>
-                                        <td>
-                                            <select name="resultados[<?= $partida['id_partida'] ?>]" class="form-select" required>
-                                                <option value="">Selecione...</option>
-                                                <?php if (strpos($torneio['tipo_torneio'], 'bo3') !== false): ?>
-                                                    <option value="jogador1_2x0">Vitória <?= htmlspecialchars($partida['jogador1']) ?> (2x0)</option>
-                                                    <option value="jogador2_2x0">Vitória <?= htmlspecialchars($partida['jogador2']) ?> (2x0)</option>
-                                                    <option value="jogador1_2x1">Vitória <?= htmlspecialchars($partida['jogador1']) ?> (2x1)</option>
-                                                    <option value="jogador2_2x1">Vitória <?= htmlspecialchars($partida['jogador2']) ?> (2x1)</option>
-                                                    <option value="empate">Empate</option>
-                                                <?php else: ?>
-                                                    <option value="jogador1_vitoria">Vitória <?= htmlspecialchars($partida['jogador1']) ?></option>
-                                                    <option value="jogador2_vitoria">Vitória <?= htmlspecialchars($partida['jogador2']) ?></option>
-                                                    <option value="empate">Empate</option>
-                                                <?php endif; ?>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
+<tbody>
+<?php foreach ($pareamentos as $partida): ?>
+    <tr>
+        <td><?= htmlspecialchars($partida['jogador1'] ?? '') ?></td>
+        <td><?= $partida['jogador2'] ? htmlspecialchars($partida['jogador2']) : 'BY' ?></td>
+        <td>
+            <?php if (empty($partida['jogador2'])): ?>
+                <!-- BYE: vitória automática do jogador1 (2x1), travado -->
+                <select class="form-select" disabled>
+                    <option selected>Vitória <?= htmlspecialchars($partida['jogador1']) ?> (2x1)</option>
+                </select>
+            <?php else: ?>
+                <select name="resultados[<?= $partida['id_partida'] ?>]" class="form-select" required>
+                    <option value="">Selecione...</option>
+                    <?php if (strpos($torneio['tipo_torneio'], 'bo3') !== false): ?>
+                        <option value="jogador1_2x0">Vitória <?= htmlspecialchars($partida['jogador1']) ?> (2x0)</option>
+                        <option value="jogador2_2x0">Vitória <?= htmlspecialchars($partida['jogador2']) ?> (2x0)</option>
+                        <option value="jogador1_2x1">Vitória <?= htmlspecialchars($partida['jogador1']) ?> (2x1)</option>
+                        <option value="jogador2_2x1">Vitória <?= htmlspecialchars($partida['jogador2']) ?> (2x1)</option>
+                        <option value="empate">Empate</option>
+                    <?php else: ?>
+                        <option value="jogador1_vitoria">Vitória <?= htmlspecialchars($partida['jogador1']) ?></option>
+                        <option value="jogador2_vitoria">Vitória <?= htmlspecialchars($partida['jogador2']) ?></option>
+                        <option value="empate">Empate</option>
+                    <?php endif; ?>
+                </select>
+            <?php endif; ?>
+        </td>
+    </tr>
+<?php endforeach; ?>
+</tbody>
+
+
                         </table>
                         <button type="submit" class="btn btn-primary">Salvar Resultados</button>
                     </form>
@@ -202,7 +242,7 @@ foreach ($rodadas as $rodada): ?>
                         <?php foreach ($pareamentos as $partida): ?>
                             <tr>
                                 <td><?= htmlspecialchars($partida['jogador1']) ?></td>
-                                <td><?= htmlspecialchars($partida['jogador2']) ?></td>
+                                <td><?= htmlspecialchars($partida['jogador2'] ?? 'BY') ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -214,21 +254,19 @@ foreach ($rodadas as $rodada): ?>
             <button onclick="document.getElementById('pareamentoRodada<?= $rodada['numero_rodada'] ?>').style.display='none'">Fechar</button>
         </div>
     </div>
-
     <!-- Popup Pontuação -->
     <?php if ($rodada['status'] === 'finalizada'): ?>
         <div id="pontuacaoRodada<?= $rodada['numero_rodada'] ?>" class="popup-variado">
             <div class="popup-content">
                 <h3>Pontuação - Rodada <?= $rodada['numero_rodada'] ?></h3>
                 <?php
-if (str_starts_with($torneio['tipo_torneio'], 'suico')) {
-    $classificacaoRodada = $torneioModel->classificacaoSuicoParcial($torneio['id_torneio'], $rodada['numero_rodada']);
-} elseif (str_starts_with($torneio['tipo_torneio'], 'elim_dupla')) {
-    $classificacaoRodada = $torneioModel->classificacaoElimDuplaParcial($torneio['id_torneio'], $rodada['numero_rodada']);
-} else {
-    $classificacaoRodada = [];
-}
-
+                if (str_starts_with($torneio['tipo_torneio'], 'suico')) {
+                    $classificacaoRodada = $torneioModel->classificacaoSuicoParcial($torneio['id_torneio'], $rodada['numero_rodada']);
+                } elseif (str_starts_with($torneio['tipo_torneio'], 'elim_dupla')) {
+                    $classificacaoRodada = $torneioModel->classificacaoElimDuplaParcial($torneio['id_torneio'], $rodada['numero_rodada']);
+                } else {
+                    $classificacaoRodada = [];
+                }
                 ?>
                 <?php if (!empty($classificacaoRodada)): ?>
                     <table class="table table-striped">
@@ -272,6 +310,19 @@ if (str_starts_with($torneio['tipo_torneio'], 'suico')) {
     <?php endif; ?>
 <?php endforeach; ?>
 
+<!-- Botão para ver o resultado do Torneio Suiço, só aparece se for torneio suiço. -->
+<?php if (str_starts_with($torneio['tipo_torneio'], 'suico')): ?>
+    <p><hr>
+    <button class="btn btn-sm btn-primary"
+            onclick="window.open('/torneio/verResultadoSuico/<?= $torneio['id_torneio'] ?>','_blank')">
+        🏆 Transmitir Resultado Final
+    </button>
+<?php endif; ?>
+
+
+
+
+
 <?php
 // Mostrar classificação final se todas as rodadas estiverem finalizadas
 $todasFinalizadas = true;
@@ -291,56 +342,92 @@ if ($todasFinalizadas):
         $classificacao = [];
     }
 ?>
-    <div class="card mt-4">
-        <div class="card-header bg-dark text-white">
-            <p><hr>
-            <strong>Classificação Final</strong>
-        </div>
-        <div class="card-body">
-            <?php if (!empty($classificacao)): ?>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Posição</th>
-                            <th>Jogador</th>
-                            <?php if (str_starts_with($torneio['tipo_torneio'], 'suico')): ?>
-                                <th>Pontos</th>
-                                <th>Força dos Oponentes</th>
-                            <?php else: ?>
-                                <th>Vitórias</th>
-                                <th>Derrotas</th>
-                            <?php endif; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $posicao = 1; ?>
-                        <?php foreach ($classificacao as $linha): ?>
-                            <tr>
-                                <td><?= $posicao ?></td>
-                                <td>
-                                    <?= htmlspecialchars($linha['nome']) ?>
-                                    <?php if ($posicao === 1): ?>
-                                        <span class="badge bg-warning text-dark">🏆 Campeão</span>
-                                    <?php endif; ?>
-                                </td>
-                                <?php if (str_starts_with($torneio['tipo_torneio'], 'suico')): ?>
-                                    <td><?= $linha['pontos'] ?></td>
-                                    <td><?= $linha['forca_oponentes'] ?></td>
-                                <?php else: ?>
-                                    <td><?= $linha['vitorias'] ?></td>
-                                    <td><?= $linha['derrotas'] ?></td>
-                                <?php endif; ?>
-                            </tr>
-                            <?php $posicao++; ?>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <div class="alert alert-info">Não foi possível calcular a classificação final.</div>
-            <?php endif; ?>
-        </div>
+<div class="card mt-4">
+    <p><hr>
+    <div class="card-header bg-dark text-white">
+        <strong>Classificação Final</strong>
     </div>
+    <div class="card-body">
+        <?php if (!empty($classificacao)): ?>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Jogador</th>
+                        <th>Vitórias</th>
+                        <th>Derrotas</th>
+                        <th>Empates</th>
+                        <th>BYE</th>
+                        <th>Pontos</th>
+                        <th>Força dos Oponentes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $posicao = 1; ?>
+                    <?php foreach ($classificacao as $linha): ?>
+                        <tr>
+                            <td><?= $posicao ?></td>
+                            <td>
+                                <?= htmlspecialchars($linha['nome']) ?>
+                                <?php if ($posicao === 1): ?>
+                                    <span class="badge bg-warning text-dark">🏆 Campeão</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?= $linha['vitorias'] ?? 0 ?></td>
+                            <td><?= $linha['derrotas'] ?? 0 ?></td>
+                            <td><?= $linha['empates'] ?? 0 ?></td>
+                            <td><?= $linha['bye'] ?? 0 ?></td>
+                            <td><?= $linha['pontos'] ?></td>
+                            <td><?= $linha['forca_oponentes'] ?></td>
+                        </tr>
+                        <?php $posicao++; ?>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php else: ?>
+            <div class="alert alert-info">Não foi possível calcular a classificação final.</div>
+        <?php endif; ?>
+    </div>
+</div>
+
 <?php endif; ?>
+
+<!-- Popup oculto -->
+<div id="popupRegrasSuico" class="popup" style="display:none;">
+    <div class="popup-content">
+        <span class="fechar" onclick="document.getElementById('popupRegrasSuico').style.display='none'">&times;</span>
+        <h3>Regras do Torneio Suíço</h3>
+
+        <h4>Melhor de 1 (MD1)</h4>
+        <ul>
+            <li>Vitória: 3 pontos</li>
+            <li>Derrota: 0 pontos</li>
+            <li>Empate: 1 ponto para cada jogador</li>
+            <li>BYE: 2 pontos (vitória automática)</li>
+        </ul>
+
+        <h4>Melhor de 3 (MD3)</h4>
+        <ul>
+            <li>Vitória por 2x0: 3 pontos</li>
+            <li>Vitória por 2x1: 2 pontos</li>
+            <li>Derrota por 1x2: 1 ponto</li>
+            <li>Derrota por 0x2: 0 pontos</li>
+            <li>Empate: 1 ponto para cada jogador</li>
+            <li>BYE: 2 pontos (vitória automática)</li>
+        </ul>
+
+        <h4>Critérios de desempate</h4>
+        <ol>
+            <li>Pontos totais</li>
+            <li>Força dos oponentes (Buchholz)</li>
+            <li>Número de vitórias por 2x0</li>
+            <li>Número total de vitórias</li>
+            <li>Confronto direto</li>
+        </ol>
+    </div>
+    <br>
+
+</div>
 
 <br><br><br>
 

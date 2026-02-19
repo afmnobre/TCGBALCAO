@@ -24,14 +24,14 @@
     <?php if (!empty($pareamentos)): ?>
         <table>
             <thead><tr><th>Jogador 1</th><th>Jogador 2</th></tr></thead>
-            <tbody>
-                <?php foreach ($pareamentos as $partida): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($partida['jogador1']) ?></td>
-                        <td><?= htmlspecialchars($partida['jogador2']) ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
+    <tbody>
+        <?php foreach ($pareamentos as $partida): ?>
+            <tr>
+                <td><?= $partida['jogador1'] !== null ? htmlspecialchars($partida['jogador1']) : 'BYE' ?></td>
+                <td><?= $partida['jogador2'] !== null ? htmlspecialchars($partida['jogador2']) : 'BYE' ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
         </table>
     <?php else: ?>
         <p>Nenhum pareamento disponível.</p>

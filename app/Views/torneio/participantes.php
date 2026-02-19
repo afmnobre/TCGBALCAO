@@ -1,7 +1,7 @@
 
     <h2 class="mb-3">Selecionar Participantes - <?= htmlspecialchars($torneio['nome_torneio']) ?></h2>
     <p>
-        <strong>Cardgame:</strong> <?= htmlspecialchars($torneio['cardgame_nome']) ?> |
+        <strong>Cardgame:</strong> <?= htmlspecialchars($torneio['cardgame']) ?> |
         <strong>Tipo:</strong> <?= htmlspecialchars($torneio['tipo_legivel']) ?>
     </p>
 

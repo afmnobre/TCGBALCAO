@@ -35,22 +35,29 @@
                     <?php endif; ?>
                 </tr>
             </thead>
-            <tbody>
-                <?php $posicao = 1; ?>
-                <?php foreach ($classificacao as $linha): ?>
-                    <tr>
-                        <td><?= $posicao++ ?></td>
-                        <td><?= htmlspecialchars($linha['nome']) ?></td>
-                        <?php if (str_starts_with($_GET['tipo_torneio'], 'suico')): ?>
-                            <td><?= $linha['pontos'] ?></td>
-                            <td><?= $linha['forca_oponentes'] ?></td>
-                        <?php else: ?>
-                            <td><?= $linha['vitorias'] ?></td>
-                            <td><?= $linha['derrotas'] ?></td>
-                        <?php endif; ?>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
+<tbody>
+    <?php $posicao = 1; ?>
+    <?php foreach ($classificacao as $linha): ?>
+        <tr>
+            <td><?= $posicao++ ?></td>
+            <td>
+                <?= htmlspecialchars($linha['nome']) ?>
+                <?php if (!empty($linha['bye']) && $linha['bye'] === true): ?>
+                    <span style="color:gray;">(BY)</span>
+                <?php endif; ?>
+            </td>
+
+            <?php if (str_starts_with($_GET['tipo_torneio'], 'suico')): ?>
+                <td><?= $linha['pontos'] ?></td>
+                <td><?= $linha['forca_oponentes'] ?></td>
+            <?php else: ?>
+                <td><?= $linha['vitorias'] ?></td>
+                <td><?= $linha['derrotas'] ?></td>
+            <?php endif; ?>
+        </tr>
+    <?php endforeach; ?>
+</tbody>
+
         </table>
     <?php else: ?>
         <p>Não foi possível calcular a pontuação desta rodada.</p>
