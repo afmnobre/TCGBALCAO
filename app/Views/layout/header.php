@@ -27,6 +27,7 @@ $faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap" rel="stylesheet">
 
+
 </head>
 <body>
 <header style="background-color: <?= htmlspecialchars($corHeader) ?>; padding: 15px;">
@@ -39,6 +40,7 @@ $faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
             <a href="/home">Home</a>
             <a href="/pedido">Pedidos</a>
             <a href="/cliente">Clientes</a>
+            <a href="/torneio">Torneios</a>
             <a href="/produto">Produtos & Estoque</a>
             <a href="/relatorio">Relatórios</a>
             <a href="/logout">Logout</a>

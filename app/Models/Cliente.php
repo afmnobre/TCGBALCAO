@@ -175,5 +175,22 @@ class Cliente
         $stmt->execute([$telefone]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    public function listarPorLojaECardgame($id_loja, $id_cardgame)
+    {
+        $sql = "SELECT c.*
+                FROM clientes c
+                INNER JOIN clientes_lojas cl ON c.id_cliente = cl.id_cliente
+                INNER JOIN clientes_cardgames ccg ON c.id_cliente = ccg.id_cliente
+                WHERE cl.id_loja = :id_loja
+                    AND ccg.id_cardgame = :id_cardgame
+                    AND cl.status = 'ativo'
+                ORDER BY c.nome ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'id_loja'    => $id_loja,
+            'id_cardgame'=> $id_cardgame
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 

@@ -1,0 +1,268 @@
+<?php
+
+require_once __DIR__ . '/../../core/Database.php';
+
+use Core\Database;
+
+class Torneio
+{
+    private $db;
+
+    public function __construct()
+    {
+        $this->db = Database::getInstance();
+    }
+
+    /* =========================
+       CRUD BÁSICO DE TORNEIOS
+    ========================== */
+
+    public function listarPorLoja($id_loja)
+    {
+        $sql = "SELECT t.*, cg.nome AS cardgame
+                FROM torneios t
+                INNER JOIN cardgames cg ON cg.id_cardgame = t.id_cardgame
+                WHERE t.id_loja = :id_loja
+                ORDER BY t.data_criacao DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_loja' => $id_loja]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function criar($dados)
+    {
+        $sql = "INSERT INTO torneios (id_loja, id_cardgame, nome_torneio, tipo_torneio, tempo_rodada)
+                VALUES (:id_loja, :id_cardgame, :nome_torneio, :tipo_torneio, :tempo_rodada)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($dados);
+        return $this->db->lastInsertId();
+    }
+
+    public function buscar($id_torneio, $id_loja)
+    {
+        $sql = "SELECT t.*, cg.nome AS cardgame_nome
+                FROM torneios t
+                INNER JOIN cardgames cg ON cg.id_cardgame = t.id_cardgame
+                WHERE t.id_torneio = :id_torneio AND t.id_loja = :id_loja";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'id_torneio' => $id_torneio,
+            'id_loja'    => $id_loja
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /* =========================
+       PARTICIPANTES
+    ========================== */
+
+    public function adicionarParticipantes($id_torneio, $participantes)
+    {
+        $sql = "INSERT IGNORE INTO torneio_participantes (id_torneio, id_cliente)
+                VALUES (:id_torneio, :id_cliente)";
+        $stmt = $this->db->prepare($sql);
+
+        foreach ($participantes as $id_cliente) {
+            $stmt->execute([
+                'id_torneio' => $id_torneio,
+                'id_cliente' => $id_cliente
+            ]);
+        }
+        return true;
+    }
+
+    public function listarParticipantes($id_torneio)
+    {
+        $sql = "SELECT c.*
+                FROM torneio_participantes tp
+                INNER JOIN clientes c ON c.id_cliente = tp.id_cliente
+                WHERE tp.id_torneio = :id_torneio
+                ORDER BY c.nome ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_torneio' => $id_torneio]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /* =========================
+       RODADAS E PARTIDAS
+    ========================== */
+
+    public function criarRodada($id_torneio, $numero)
+    {
+        $sql = "INSERT INTO torneio_rodadas (id_torneio, numero_rodada, status)
+                VALUES (:id_torneio, :numero_rodada, 'nao_iniciada')";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'id_torneio'    => $id_torneio,
+            'numero_rodada' => $numero
+        ]);
+        return $this->db->lastInsertId();
+    }
+
+    public function listarRodadas($id_torneio)
+    {
+        $sql = "SELECT * FROM torneio_rodadas
+                WHERE id_torneio = :id_torneio
+                ORDER BY numero_rodada ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_torneio' => $id_torneio]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function salvarPartida($id_rodada, $jogador1, $jogador2, $resultado)
+    {
+        $sql = "INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2, resultado)
+                VALUES (:id_rodada, :j1, :j2, :resultado)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'id_rodada'  => $id_rodada,
+            'j1'         => $jogador1,
+            'j2'         => $jogador2,
+            'resultado'  => $resultado
+        ]);
+    }
+
+    public function listarPareamentos($id_torneio, $numero_rodada)
+    {
+        $sql = "SELECT tp.*, c1.nome AS jogador1, c2.nome AS jogador2
+                FROM torneio_partidas tp
+                INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+                INNER JOIN clientes c1 ON c1.id_cliente = tp.id_jogador1
+                INNER JOIN clientes c2 ON c2.id_cliente = tp.id_jogador2
+                WHERE tr.id_torneio = :id_torneio AND tr.numero_rodada = :numero_rodada";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'id_torneio'    => $id_torneio,
+            'numero_rodada' => $numero_rodada
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /* =========================
+       CLASSIFICAÇÃO SUÍÇO
+    ========================== */
+public function classificacaoSuico($id_torneio)
+{
+    // 1. Calcular pontos de cada jogador
+    $sql = "SELECT c.id_cliente, c.nome,
+                   SUM(CASE WHEN tp.resultado LIKE 'jogador1%' AND tp.id_jogador1 = c.id_cliente THEN 3
+                            WHEN tp.resultado LIKE 'jogador2%' AND tp.id_jogador2 = c.id_cliente THEN 3
+                            WHEN tp.resultado = 'empate' AND (tp.id_jogador1 = c.id_cliente OR tp.id_jogador2 = c.id_cliente) THEN 1
+                            ELSE 0 END) AS pontos
+            FROM torneio_participantes tpart
+            INNER JOIN clientes c ON c.id_cliente = tpart.id_cliente
+            LEFT JOIN torneio_rodadas tr ON tr.id_torneio = tpart.id_torneio
+            LEFT JOIN torneio_partidas tp ON tp.id_rodada = tr.id_rodada
+            WHERE tpart.id_torneio = :id_torneio
+            GROUP BY c.id_cliente";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute(['id_torneio' => $id_torneio]);
+    $classificacao = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 2. Criar mapa de pontos para lookup rápido
+    $mapaPontos = [];
+    foreach ($classificacao as $j) {
+        $mapaPontos[$j['id_cliente']] = $j['pontos'];
+    }
+
+    // 3. Calcular força dos oponentes para cada jogador
+    foreach ($classificacao as &$jogador) {
+        $sqlOpp = "SELECT CASE 
+                            WHEN tp.id_jogador1 = :id_cliente THEN tp.id_jogador2
+                            WHEN tp.id_jogador2 = :id_cliente THEN tp.id_jogador1
+                            ELSE NULL END AS adversario
+                   FROM torneio_partidas tp
+                   INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+                   WHERE tr.id_torneio = :id_torneio
+                     AND (:id_cliente IN (tp.id_jogador1, tp.id_jogador2))";
+        $stmtOpp = $this->db->prepare($sqlOpp);
+        $stmtOpp->execute([
+            'id_torneio' => $id_torneio,
+            'id_cliente' => $jogador['id_cliente']
+        ]);
+        $adversarios = $stmtOpp->fetchAll(PDO::FETCH_COLUMN);
+
+        $forca = 0;
+        foreach ($adversarios as $adv) {
+            if (isset($mapaPontos[$adv])) {
+                $forca += $mapaPontos[$adv];
+            }
+        }
+        $jogador['forca_oponentes'] = $forca;
+    }
+
+    // 4. Ordenar por pontos > força dos oponentes
+    usort($classificacao, function ($a, $b) {
+        if ($a['pontos'] == $b['pontos']) {
+            return $b['forca_oponentes'] <=> $a['forca_oponentes'];
+        }
+        return $b['pontos'] <=> $a['pontos'];
+    });
+
+    return $classificacao;
+}
+
+
+    /* =========================
+       CLASSIFICAÇÃO ELIMINAÇÃO DUPLA
+    ========================== */
+
+    public function classificacaoElimDupla($id_torneio)
+    {
+        $sql = "SELECT c.id_cliente, c.nome,
+                       SUM(CASE WHEN tp.resultado LIKE 'jogador1%' AND tp.id_jogador1 = c.id_cliente THEN 1
+                                WHEN tp.resultado LIKE 'jogador2%' AND tp.id_jogador2 = c.id_cliente THEN 1
+                                ELSE 0 END) AS vitorias,
+                       SUM(CASE WHEN tp.resultado LIKE 'jogador1%' AND tp.id_jogador2 = c.id_cliente THEN 1
+                                WHEN tp.resultado LIKE 'jogador2%' AND tp.id_jogador1 = c.id_cliente THEN 1
+                                ELSE 0 END) AS derrotas
+                FROM torneio_participantes tpart
+                INNER JOIN clientes c ON c.id_cliente = tpart.id_cliente
+                LEFT JOIN torneio_rodadas tr ON tr.id_torneio = tpart.id_torneio
+                LEFT JOIN torneio_partidas tp ON tp.id_rodada = tr.id_rodada
+                WHERE tpart.id_torneio = :id_torneio
+                GROUP BY c.id_cliente";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_torneio' => $id_torneio]);
+        $classificacao = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Ordenação: menos derrotas > mais vitórias
+        usort($classificacao, function ($a, $b) {
+            if ($a['derrotas'] == $b['derrotas']) {
+                return $b['vitorias'] <=> $a['vitorias'];
+            }
+            return $a['derrotas'] <=> $b['derrotas'];
+        });
+
+        return $classificacao;
+    }
+
+    /* =========================
+       PAREAMENTO
+    ========================== */
+
+    public function gerarPareamentosSuico($id_torneio, $numero_rodada)
+    {
+        $participantes = $this->classificacaoSuico($id_torneio);
+        $rodadaId = $this->criarRodada($id_torneio, $numero_rodada);
+
+        for ($i = 0; $i < count($participantes); $i += 2) {
+            if (isset($participantes[$i+1])) {
+                $this->salvarPartida($rodadaId, $participantes[$i]['id_cliente'], $participantes[$i+1]['id_cliente'], null);
+            }
+        }
+    }
+
+    public function gerarPareamentosElimDupla($id_torneio, $numero_rodada)
+    {
+        $participantes = $this->classificacaoElimDupla($id_torneio);
+        $rodadaId = $this->criarRodada($id_torneio, $numero_rodada);
+
+        for ($i = 0; $i < count($participantes); $i += 2) {
+            if (isset($participantes[$i+1])) {
+                $this->salvarPartida($rodadaId, $participantes[$i]['id_cliente'], $participantes[$i+1]['id_cliente'], null);
+            }
+        }
+    }
+}
+
