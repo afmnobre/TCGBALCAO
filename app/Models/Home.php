@@ -18,6 +18,7 @@ class Home
         $sql = "SELECT
                     C.id_cliente,
                     C.nome,
+                    C.telefone,
                     MAX(P.data_pedido) AS ultima_compra,
                     COUNT(P.id_pedido) AS total_pedidos,
                     COALESCE(SUM(P.valor_variado), 0) AS total_gasto
@@ -29,15 +30,16 @@ class Home
                 LEFT JOIN pedidos P
                     ON P.id_cliente = C.id_cliente
                     AND P.id_loja = CL.id_loja
-                GROUP BY C.id_cliente, C.nome
+                GROUP BY C.id_cliente, C.nome, C.telefone
                 HAVING (MAX(P.data_pedido) IS NULL
-                     OR MAX(P.data_pedido) < DATE_SUB(CURDATE(), INTERVAL 2 MONTH))
+                    OR MAX(P.data_pedido) < DATE_SUB(CURDATE(), INTERVAL 2 MONTH))
                 ORDER BY ultima_compra ASC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute(['id_loja' => $idLoja]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
 }
 
 

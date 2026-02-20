@@ -7,6 +7,15 @@ require_once __DIR__ . '/../Models/Loja.php';
 
 class TorneioController extends Controller
 {
+
+    private $model;
+
+    public function __construct() {
+        // Instancia o model Torneio (já conecta ao banco)
+        $this->model = new Torneio();
+    }
+
+
     public function index()
     {
         AuthMiddleware::verificarLogin();
@@ -14,10 +23,22 @@ class TorneioController extends Controller
         $torneioModel = new Torneio();
         $torneios = $torneioModel->listarPorLoja($_SESSION['LOJA']['id_loja']);
 
+        // Adiciona campo amigável
+        foreach ($torneios as &$torneio) {
+            switch ($torneio['tipo_torneio']) {
+                case 'suico_bo1': $torneio['tipo_legivel'] = 'Suíço (Melhor de 1)'; break;
+                case 'suico_bo3': $torneio['tipo_legivel'] = 'Suíço (Melhor de 3)'; break;
+                case 'Elim_dupla_bo3': $torneio['tipo_legivel'] = 'Eliminação Dupla (Melhor de 3)'; break;
+                case 'Elim_dupla_bo1': $torneio['tipo_legivel'] = 'Eliminação Dupla (Melhor de 1)'; break;
+                default: $torneio['tipo_legivel'] = ucfirst($torneio['tipo_torneio']);
+            }
+        }
+
         $this->view('torneio/index', [
             'torneios' => $torneios
         ]);
     }
+
 
     public function criar()
     {
@@ -301,7 +322,15 @@ public function verResultadoSuico($id_torneio)
     require __DIR__ . '/../Views/torneio/resultadosuico.php';
 }
 
-
+    public function excluir($idTorneio) {
+        if ($this->model->excluir($idTorneio)) {
+            $_SESSION['msg'] = "Torneio excluído com sucesso!";
+        } else {
+            $_SESSION['msg'] = "Erro ao excluir torneio.";
+        }
+        header("Location: /torneio");
+        exit;
+    }
 
 }
 

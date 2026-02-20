@@ -2,24 +2,22 @@
 function initCalendario(datasPendentes, dataSelecionada) {
     flatpickr("#dataPedido", {
         locale: "pt",
-        dateFormat: "Y-m-d",       // valor interno usado para navegação (?data=YYYY-MM-DD)
-        altInput: true,            // cria um campo alternativo para exibir
-        altFormat: "d/m/Y",        // formato amigável para o usuário
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "d/m/Y",
         defaultDate: dataSelecionada,
         onDayCreate: function(dObj, dStr, fp, dayElem) {
             const data = dayElem.dateObj.toISOString().split('T')[0];
             if (datasPendentes.includes(data)) {
-                dayElem.classList.add("has-pedido");
-                dayElem.title = "Pedido não pago";
+                dayElem.style.background = '#ffcccc';
+                dayElem.title = 'Pedido não pago';
             }
         },
-        onChange: function(selectedDates, dateStr, instance) {
+        onChange: function(sel, dateStr) {
             window.location = '?data=' + dateStr;
         }
     });
 }
-
-
 
 // Pesquisa dinâmica de clientes
 function initPesquisaCliente() {
@@ -40,10 +38,7 @@ function abrirPopupVariado(idCliente) {
     clienteAtual = idCliente;
     const campoHidden = document.getElementById('observacao_variado_' + idCliente);
     document.getElementById('descricaoVariado').value = campoHidden.value;
-
-    // Inicializa e abre o modal Bootstrap
-    const modal = new bootstrap.Modal(document.getElementById('popupVariado'));
-    modal.show();
+    document.getElementById('popupVariado').style.display = 'block';
 }
 
 function salvarDescricaoVariado() {
@@ -51,11 +46,11 @@ function salvarDescricaoVariado() {
         const campoHidden = document.getElementById('observacao_variado_' + clienteAtual);
         campoHidden.value = document.getElementById('descricaoVariado').value;
     }
+    fecharPopupVariado();
+}
 
-    // Fecha o modal Bootstrap
-    const modalEl = document.getElementById('popupVariado');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    modal.hide();
+function fecharPopupVariado() {
+    document.getElementById('popupVariado').style.display = 'none';
 }
 
 // Inicialização geral da tela de pedidos
@@ -65,29 +60,32 @@ function initPedidos(datasPendentes, dataSelecionada) {
     filtrarClientes(); // reaplica filtro de cardgames ao carregar
 }
 
-// recibos de PAGAMENTO
 function abrirRecibo(idPedido) {
+    const modal = document.getElementById('modalRecibo');
     const iframe = document.getElementById('iframeRecibo');
+
+    // Define o caminho do recibo.php
     iframe.src = '/pedido/recibo/' + idPedido;
 
-    const modal = new bootstrap.Modal(document.getElementById('modalRecibo'));
-    modal.show();
+    // Exibe o modal
+    modal.style.display = 'block';
 }
 
 function fecharRecibo() {
-    const modalEl = document.getElementById('modalRecibo');
+    const modal = document.getElementById('modalRecibo');
     const iframe = document.getElementById('iframeRecibo');
 
+    modal.style.display = 'none';
     iframe.src = ''; // limpa o iframe
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
 }
 
 function imprimirRecibo() {
     const iframe = document.getElementById('iframeRecibo');
+    // Foca no conteúdo do iframe e imprime apenas ele
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
 }
+
 
 function calcularTotal(clienteId) {
     let total = 0;
@@ -179,7 +177,6 @@ function filtrarClientes() {
 
 // EVENTOS QUE CARREGAM COM A PAGINA
 document.addEventListener('DOMContentLoaded', () => {
-    // Atualiza totais quando quantidade de produto ou valor variado muda
     document.querySelectorAll('input[type="number"], input[name^="variado"]').forEach(input => {
         input.addEventListener('input', () => {
             const clienteId = input.dataset.cliente;
@@ -189,7 +186,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Filtro por cardgames
     document.querySelectorAll('input[name="cardgames[]"]').forEach(cb => {
         cb.addEventListener('change', () => {
             atualizarHiddenCardgames();
@@ -197,39 +193,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Atualiza hidden dos cardgames ao salvar pedidos
     document.getElementById('formPedidos').addEventListener('submit', atualizarHiddenCardgames);
 
-    // Atualiza total recebido quando checkbox de pago muda
     document.querySelectorAll('input[name^="pago"]').forEach(checkbox => {
         checkbox.addEventListener('change', () => {
             calcularTotalRecebido();
         });
     });
 
-    // Calcula totais iniciais por cliente
     document.querySelectorAll('td[id^="total_"]').forEach(td => {
         const clienteId = td.id.replace('total_', '');
         calcularTotal(clienteId);
     });
 
-    // Calcula total geral inicial
     calcularTotalRecebido();
-
-    // Pesquisa dinâmica por nome de cliente
-    const inputPesquisa = document.getElementById("pesquisaCliente");
-    if (inputPesquisa) {
-        inputPesquisa.addEventListener("input", function() {
-            const filtro = this.value.toLowerCase();
-
-            document.querySelectorAll("table tbody tr").forEach(tr => {
-                const nomeCliente = tr.querySelector("td").innerText.toLowerCase();
-                tr.style.display = nomeCliente.includes(filtro) ? "" : "none";
-            });
-        });
-    }
 });
-
 
 // Atualiza o hidden sempre que o calendário muda
 document.getElementById('dataPedido').addEventListener('change', function() {
@@ -240,11 +218,14 @@ document.getElementById('dataPedido').addEventListener('change', function() {
 document.getElementById('dataSelecionadaHidden').value = document.getElementById('dataPedido').value;
 
 function abrirModalPagamento(idPedido, idCliente) {
+    const modal = document.getElementById('modalPagamento');
+    modal.style.display = 'flex';
+
     // IDs
     document.getElementById('modal_id_pedido').value = idPedido;
     document.getElementById('modal_id_cliente').value = idCliente;
 
-    const form = document.getElementById('formPagamento');
+    const form = modal.querySelector('form');
 
     // Remove campos antigos
     form.querySelectorAll('input[name^="variado"], input[name^="observacao_variado"], input[name^="itens"]').forEach(el => el.remove());
@@ -277,13 +258,29 @@ function abrirModalPagamento(idPedido, idCliente) {
         clone.value = input.value;
         form.appendChild(clone);
     });
+}
 
-    // Abre modal Bootstrap
-    const modal = new bootstrap.Modal(document.getElementById('modalPagamento'));
-    modal.show();
+
+
+function fecharModalPagamento() {
+    const modal = document.getElementById('modalPagamento');
+    if (modal) modal.style.display = 'none';
 }
 
 function salvarPagamento() {
-    document.getElementById('formPagamento').submit();
+    const form = document.getElementById('formPagamento');
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: form.method,
+        body: formData
+    })
+    .then(res => res.text())
+    .then(() => {
+        fecharModalPagamento();
+        location.reload();
+    })
+    .catch(err => console.error("Erro ao salvar pagamento:", err));
 }
+
 

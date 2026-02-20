@@ -45,19 +45,19 @@ class Torneio
         return $this->db->lastInsertId();
     }
 
-public function buscar($id_torneio, $id_loja)
-{
-    $sql = "SELECT t.*, cg.nome AS cardgame
-            FROM torneios t
-            INNER JOIN cardgames cg ON cg.id_cardgame = t.id_cardgame
-            WHERE t.id_torneio = :id_torneio AND t.id_loja = :id_loja";
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute([
-        'id_torneio' => $id_torneio,
-        'id_loja'    => $id_loja
-    ]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
+    public function buscar($id_torneio, $id_loja)
+    {
+        $sql = "SELECT t.*, cg.nome AS cardgame
+                FROM torneios t
+                INNER JOIN cardgames cg ON cg.id_cardgame = t.id_cardgame
+                WHERE t.id_torneio = :id_torneio AND t.id_loja = :id_loja";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+                'id_torneio' => $id_torneio,
+                'id_loja'    => $id_loja
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
 
     public function adicionarParticipantes($id_torneio, $participantes)
@@ -130,120 +130,120 @@ public function buscar($id_torneio, $id_loja)
        PAREAMENTO SUÍÇO
     ========================== */
 
-public function gerarPareamentosSuico($id_torneio, $jogadores, $numeroRodada)
-{
-    $pareamentos = [];
+    public function gerarPareamentosSuico($id_torneio, $jogadores, $numeroRodada)
+    {
+        $pareamentos = [];
 
-    // 1. Criar registro da rodada
-    $sqlRodada = "INSERT INTO torneio_rodadas (id_torneio, numero_rodada, status)
+        // 1. Criar registro da rodada
+        $sqlRodada = "INSERT INTO torneio_rodadas (id_torneio, numero_rodada, status)
                   VALUES (:id_torneio, :numero_rodada, 'em_andamento')";
-    $stmtRodada = $this->db->prepare($sqlRodada);
-    $stmtRodada->execute([
-        'id_torneio'    => $id_torneio,
-        'numero_rodada' => $numeroRodada
-    ]);
-    $idRodada = $this->db->lastInsertId();
-
-    // 2. Buscar classificação parcial até a rodada anterior
-    $classificacao = $this->classificacaoSuicoParcial($id_torneio, $numeroRodada - 1);
-
-    // 3. Criar mapa de pontos
-    $mapaPontos = [];
-    foreach ($classificacao as $linha) {
-        $mapaPontos[$linha['id_cliente']] = [
-            'pontos' => $linha['pontos'],
-            'forca'  => $linha['forca_oponentes']
-        ];
-    }
-
-    // 4. Ordenar jogadores
-    if ($numeroRodada == 1) {
-        // Primeira rodada: embaralhar aleatoriamente
-        shuffle($jogadores);
-    } else {
-        // Rodadas seguintes: ordenar por pontos e força
-        usort($jogadores, function ($a, $b) use ($mapaPontos) {
-            $pa = $mapaPontos[$a['id_jogador']]['pontos'] ?? 0;
-            $pb = $mapaPontos[$b['id_jogador']]['pontos'] ?? 0;
-            if ($pa == $pb) {
-                $fa = $mapaPontos[$a['id_jogador']]['forca'] ?? 0;
-                $fb = $mapaPontos[$b['id_jogador']]['forca'] ?? 0;
-                return $fb <=> $fa;
-            }
-            return $pb <=> $pa;
-        });
-    }
-
-    // 5. Se número de jogadores for ímpar, atribuir BYE
-    if (count($jogadores) % 2 !== 0) {
-        // Buscar quem já recebeu bye
-        $sqlByeCheck = "SELECT DISTINCT id_jogador1
-                        FROM torneio_partidas
-                        WHERE id_rodada IN (
-                            SELECT id_rodada FROM torneio_rodadas WHERE id_torneio = :id_torneio
-                        ) AND id_jogador2 IS NULL";
-        $stmtByeCheck = $this->db->prepare($sqlByeCheck);
-        $stmtByeCheck->execute(['id_torneio' => $id_torneio]);
-        $byeJogadores = $stmtByeCheck->fetchAll(PDO::FETCH_COLUMN);
-
-        // Escolher jogador que ainda não recebeu bye
-        $byePlayer = null;
-        foreach ($jogadores as $index => $jogador) {
-            if (!in_array($jogador['id_jogador'], $byeJogadores)) {
-                $byePlayer = $jogador;
-                unset($jogadores[$index]);
-                break;
-            }
-        }
-
-        // Se todos já receberam bye (caso raro), pegar o último
-        if (!$byePlayer) {
-            $byePlayer = array_pop($jogadores);
-        }
-
-        // Registrar vitória automática no banco
-        $sqlBye = "INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2, resultado)
-                   VALUES (:id_rodada, :id_jogador1, NULL, 'jogador1_vitoria')";
-        $stmtBye = $this->db->prepare($sqlBye);
-        $stmtBye->execute([
-            'id_rodada'   => $idRodada,
-            'id_jogador1' => $byePlayer['id_jogador']
+        $stmtRodada = $this->db->prepare($sqlRodada);
+        $stmtRodada->execute([
+            'id_torneio'    => $id_torneio,
+            'numero_rodada' => $numeroRodada
         ]);
-        $idPartidaBye = $this->db->lastInsertId();
+        $idRodada = $this->db->lastInsertId();
 
-        $pareamentos[] = [
-            'id_partida' => $idPartidaBye,
-            'jogador1'   => $byePlayer['nome'],
-            'jogador2'   => 'BY',
-            'resultado'  => 'jogador1_vitoria'
-        ];
-    }
+        // 2. Buscar classificação parcial até a rodada anterior
+        $classificacao = $this->classificacaoSuicoParcial($id_torneio, $numeroRodada - 1);
 
-    // 6. Parear jogadores sequencialmente
-    $jogadores = array_values($jogadores); // reindexar após remover bye
-    for ($i = 0; $i < count($jogadores); $i += 2) {
-        if (isset($jogadores[$i + 1])) {
-            $sql = "INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2, resultado)
-                    VALUES (:id_rodada, :id_jogador1, :id_jogador2, NULL)";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                'id_rodada'   => $idRodada,
-                'id_jogador1' => $jogadores[$i]['id_jogador'],
-                'id_jogador2' => $jogadores[$i + 1]['id_jogador']
-            ]);
-            $idPartida = $this->db->lastInsertId();
-
-            $pareamentos[] = [
-                'id_partida' => $idPartida,
-                'jogador1'   => $jogadores[$i]['nome'],
-                'jogador2'   => $jogadores[$i + 1]['nome'],
-                'resultado'  => null
+        // 3. Criar mapa de pontos
+        $mapaPontos = [];
+        foreach ($classificacao as $linha) {
+            $mapaPontos[$linha['id_cliente']] = [
+                'pontos' => $linha['pontos'],
+                'forca'  => $linha['forca_oponentes']
             ];
         }
-    }
 
-    return $pareamentos;
-}
+        // 4. Ordenar jogadores
+        if ($numeroRodada == 1) {
+            // Primeira rodada: embaralhar aleatoriamente
+            shuffle($jogadores);
+        } else {
+            // Rodadas seguintes: ordenar por pontos e força
+            usort($jogadores, function ($a, $b) use ($mapaPontos) {
+                $pa = $mapaPontos[$a['id_jogador']]['pontos'] ?? 0;
+                $pb = $mapaPontos[$b['id_jogador']]['pontos'] ?? 0;
+                if ($pa == $pb) {
+                    $fa = $mapaPontos[$a['id_jogador']]['forca'] ?? 0;
+                    $fb = $mapaPontos[$b['id_jogador']]['forca'] ?? 0;
+                    return $fb <=> $fa;
+                }
+                return $pb <=> $pa;
+            });
+        }
+
+        // 5. Se número de jogadores for ímpar, atribuir BYE
+        if (count($jogadores) % 2 !== 0) {
+            // Buscar quem já recebeu bye
+            $sqlByeCheck = "SELECT DISTINCT id_jogador1
+                            FROM torneio_partidas
+                            WHERE id_rodada IN (
+                                SELECT id_rodada FROM torneio_rodadas WHERE id_torneio = :id_torneio
+                            ) AND id_jogador2 IS NULL";
+            $stmtByeCheck = $this->db->prepare($sqlByeCheck);
+            $stmtByeCheck->execute(['id_torneio' => $id_torneio]);
+            $byeJogadores = $stmtByeCheck->fetchAll(PDO::FETCH_COLUMN);
+
+            // Escolher jogador que ainda não recebeu bye
+            $byePlayer = null;
+            foreach ($jogadores as $index => $jogador) {
+                if (!in_array($jogador['id_jogador'], $byeJogadores)) {
+                    $byePlayer = $jogador;
+                    unset($jogadores[$index]);
+                    break;
+                }
+            }
+
+            // Se todos já receberam bye (caso raro), pegar o último
+            if (!$byePlayer) {
+                $byePlayer = array_pop($jogadores);
+            }
+
+            // Registrar vitória automática no banco
+            $sqlBye = "INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2, resultado)
+                       VALUES (:id_rodada, :id_jogador1, NULL, 'jogador1_vitoria')";
+            $stmtBye = $this->db->prepare($sqlBye);
+            $stmtBye->execute([
+                'id_rodada'   => $idRodada,
+                'id_jogador1' => $byePlayer['id_jogador']
+            ]);
+            $idPartidaBye = $this->db->lastInsertId();
+
+            $pareamentos[] = [
+                'id_partida' => $idPartidaBye,
+                'jogador1'   => $byePlayer['nome'],
+                'jogador2'   => 'BY',
+                'resultado'  => 'jogador1_vitoria'
+            ];
+        }
+
+        // 6. Parear jogadores sequencialmente
+        $jogadores = array_values($jogadores); // reindexar após remover bye
+        for ($i = 0; $i < count($jogadores); $i += 2) {
+            if (isset($jogadores[$i + 1])) {
+                $sql = "INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2, resultado)
+                    VALUES (:id_rodada, :id_jogador1, :id_jogador2, NULL)";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([
+                    'id_rodada'   => $idRodada,
+                    'id_jogador1' => $jogadores[$i]['id_jogador'],
+                    'id_jogador2' => $jogadores[$i + 1]['id_jogador']
+                ]);
+                $idPartida = $this->db->lastInsertId();
+
+                $pareamentos[] = [
+                    'id_partida' => $idPartida,
+                    'jogador1'   => $jogadores[$i]['nome'],
+                    'jogador2'   => $jogadores[$i + 1]['nome'],
+                    'resultado'  => null
+                ];
+            }
+        }
+
+        return $pareamentos;
+    }
 
 
 
@@ -425,13 +425,49 @@ public function classificacaoSuicoParcial($id_torneio, $numero_rodada)
 /* =========================
    CLASSIFICAÇÃO SUÍÇO FINAL
 ========================== */
-public function classificacaoSuico($id_torneio)
-{
-    $rodadas = $this->listarRodadas($id_torneio);
-    $ultimaRodada = !empty($rodadas) ? end($rodadas)['numero_rodada'] : 0;
+    public function classificacaoSuico($id_torneio)
+    {
+        $rodadas = $this->listarRodadas($id_torneio);
+        $ultimaRodada = !empty($rodadas) ? end($rodadas)['numero_rodada'] : 0;
 
-    // Retorna a classificação parcial da última rodada
-    return $this->classificacaoSuicoParcial($id_torneio, $ultimaRodada);
-}
+        // Retorna a classificação parcial da última rodada
+        return $this->classificacaoSuicoParcial($id_torneio, $ultimaRodada);
+    }
+
+
+    public function excluir($idTorneio) {
+        try {
+            $this->db->beginTransaction();
+
+            // Excluir partidas ligadas às rodadas
+            $sql = "DELETE TP FROM torneio_partidas TP
+                    INNER JOIN torneio_rodadas TR ON TP.id_rodada = TR.id_rodada
+                    WHERE TR.id_torneio = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $idTorneio]);
+
+            // Excluir rodadas
+            $sql = "DELETE FROM torneio_rodadas WHERE id_torneio = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $idTorneio]);
+
+            // Excluir participantes
+            $sql = "DELETE FROM torneio_participantes WHERE id_torneio = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $idTorneio]);
+
+            // Excluir torneio
+            $sql = "DELETE FROM torneios WHERE id_torneio = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $idTorneio]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
+    }
+
 }
 
