@@ -175,48 +175,55 @@ $maxRodadas = ceil(log($numJogadores, 2));
         </div>
     </div>
 
-    <?php if ($rodada["status"] === "finalizada"): ?>
-        <div class="modal fade" id="pontuacaoRodada<?= $rodada["numero_rodada"] ?>" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-xl modal-dialog-centered">
-                <div class="modal-content bg-dark text-light">
-                    <div class="modal-header border-secondary">
-                        <h5 class="modal-title">Classificação - Rodada <?= $rodada["numero_rodada"] ?></h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <?php
-                        $classificacao = str_contains($torneio["tipo_torneio"], "suico")
-                            ? $torneioModel->classificacaoSuicoParcial($torneio["id_torneio"], $rodada["numero_rodada"])
-                            : $torneioModel->classificacaoElimDuplaParcial($torneio["id_torneio"], $rodada["numero_rodada"]);
-                        ?>
-                        <div class="table-responsive">
-                            <table class="table table-dark table-striped align-middle">
-                                <thead>
+<?php if ($rodada["status"] === "finalizada"): ?>
+    <div class="modal fade" id="pontuacaoRodada<?= $rodada["numero_rodada"] ?>" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">Classificação - Rodada <?= $rodada["numero_rodada"] ?></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <?php
+                    $classificacao = str_contains($torneio["tipo_torneio"], "suico")
+                        ? $torneioModel->classificacaoSuicoParcial($torneio["id_torneio"], $rodada["numero_rodada"])
+                        : $torneioModel->classificacaoElimDuplaParcial($torneio["id_torneio"], $rodada["numero_rodada"]);
+                    ?>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Posição</th><th>Jogador</th><th>Vitórias</th><th>Derrotas</th><th>Empates</th><th>BYE</th><th>Pontos</th><th>Força dos Oponentes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $posicao = 1; foreach ($classificacao as $linha): ?>
                                     <tr>
-                                        <th>Posição</th><th>Jogador</th><th>Vitórias</th><th>Derrotas</th><th>Empates</th><th>BYE</th><th>Pontos</th><th>Força dos Oponentes</th>
+                                        <td><?= $posicao ?></td>
+                                        <td><?= htmlspecialchars($linha['nome']) ?></td>
+                                        <td><?= $linha['vitorias'] ?? 0 ?></td>
+                                        <td><?= $linha['derrotas'] ?? 0 ?></td>
+                                        <td><?= $linha['empates'] ?? 0 ?></td>
+                                        <td>
+                                            <?php if (!empty($linha['bye']) && $linha['bye'] > 0): ?>
+                                                <?= $linha['bye'] ?>
+                                            <?php else: ?>
+                                                0
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?= $linha['pontos'] ?></td>
+                                        <td><?= $linha['forca_oponentes'] ?></td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <?php $posicao = 1; foreach ($classificacao as $linha): ?>
-                                        <tr>
-                                            <td><?= $posicao ?></td>
-                                            <td><?= htmlspecialchars($linha['nome']) ?> <?php if ($posicao === 1): ?><span class="badge bg-warning text-dark">🏆 Campeão</span><?php endif; ?></td>
-                                            <td><?= $linha['vitorias'] ?? 0 ?></td>
-                                            <td><?= $linha['derrotas'] ?? 0 ?></td>
-                                            <td><?= $linha['empates'] ?? 0 ?></td>
-                                            <td><?= $linha['bye'] ?? 0 ?></td>
-                                            <td><?= $linha['pontos'] ?></td>
-                                            <td><?= $linha['forca_oponentes'] ?></td>
-                                        </tr>
-                                    <?php $posicao++; endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                <?php $posicao++; endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-    <?php endif; ?>
+    </div>
+<?php endif; ?>
+
 <?php endforeach; ?>
 
 <?php
@@ -225,37 +232,43 @@ foreach ($rodadas as $r) { if ($r["status"] !== "finalizada") { $todasFinalizada
 if ($todasFinalizadas):
     $classificacaoFinal = str_contains($torneio["tipo_torneio"], "suico") ? $torneioModel->classificacaoSuico($torneio["id_torneio"]) : $torneioModel->classificacaoElimDupla($torneio["id_torneio"]);
 ?>
-    <div class="card bg-dark text-light mt-4 border-warning">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <strong>🏆 Classificação Final</strong>
-            <button class="btn btn-sm btn-primary" onclick="window.open('/torneio/verResultadoSuico/<?= $torneio['id_torneio'] ?>','_blank')">🏆 Resultado</button>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-dark table-striped align-middle">
-                    <thead>
+<div class="card bg-dark text-light mt-4 border-warning">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>🏆 Classificação Final</strong>
+        <button class="btn btn-sm btn-primary" onclick="window.open('/torneio/verResultadoSuico/<?= $torneio['id_torneio'] ?>','_blank')">🏆 Resultado</button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-dark table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Posição</th><th>Jogador</th><th>Vitórias</th><th>Derrotas</th><th>Empates</th><th>BYE</th><th>Pontos</th><th>Força dos Oponentes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $posicao = 1; foreach ($classificacaoFinal as $linha): ?>
                         <tr>
-                            <th>Posição</th><th>Jogador</th><th>Vitórias</th><th>Derrotas</th><th>Empates</th><th>BYE</th><th>Pontos</th><th>Força dos Oponentes</th>
+                            <td><?= $posicao ?></td>
+                            <td><?= htmlspecialchars($linha['nome']) ?></td>
+                            <td><?= $linha['vitorias'] ?? 0 ?></td>
+                            <td><?= $linha['derrotas'] ?? 0 ?></td>
+                            <td><?= $linha['empates'] ?? 0 ?></td>
+                            <td>
+                                <?php if (!empty($linha['bye']) && $linha['bye'] > 0): ?>
+                                    <?= $linha['bye'] ?>
+                                <?php else: ?>
+                                    0
+                                <?php endif; ?>
+                            </td>
+                            <td><?= $linha['pontos'] ?></td>
+                            <td><?= $linha['forca_oponentes'] ?></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php $posicao = 1; foreach ($classificacaoFinal as $linha): ?>
-                            <tr>
-                                <td><?= $posicao ?></td>
-                                <td><?= htmlspecialchars($linha['nome']) ?> <?php if ($posicao === 1): ?><span class="badge bg-warning text-dark">🏆 Campeão</span><?php endif; ?></td>
-                                <td><?= $linha['vitorias'] ?? 0 ?></td>
-                                <td><?= $linha['derrotas'] ?? 0 ?></td>
-                                <td><?= $linha['empates'] ?? 0 ?></td>
-                                <td><?= $linha['bye'] ?? 0 ?></td>
-                                <td><?= $linha['pontos'] ?></td>
-                                <td><?= $linha['forca_oponentes'] ?></td>
-                            </tr>
-                        <?php $posicao++; endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php $posicao++; endforeach; ?>
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 <?php endif; ?>
 
 <div class="modal fade" id="popupRegrasSuico" tabindex="-1" aria-hidden="true">
@@ -271,16 +284,15 @@ if ($todasFinalizadas):
                     <li>Vitória: 3 pontos</li>
                     <li>Derrota: 0 pontos</li>
                     <li>Empate: 1 ponto para cada jogador</li>
-                    <li>BYE: 2 pontos (vitória automática)</li>
+                    <li>BYE: 3 pontos (vitória automática)</li>
                 </ul>
                 <h4>Melhor de 3 (MD3)</h4>
                 <ul>
                     <li>Vitória por 2x0: 3 pontos</li>
-                    <li>Vitória por 2x1: 2 pontos</li>
-                    <li>Derrota por 1x2: 1 ponto</li>
-                    <li>Derrota por 0x2: 0 pontos</li>
+                    <li>Vitória por 2x1: 3 pontos</li>
+                    <li>Derrota: 0 ponto</li>
                     <li>Empate: 1 ponto para cada jogador</li>
-                    <li>BYE: 2 pontos (vitória automática)</li>
+                    <li>BYE: 3 pontos (vitória automática)</li>
                 </ul>
                 <h4>Critérios de desempate</h4>
                 <ol>
@@ -293,5 +305,4 @@ if ($todasFinalizadas):
             </div>
         </div>
     </div>
-    </div>
-<br><br><br>
+</div>

@@ -14,7 +14,7 @@
                             <input type="checkbox" name="participantes[]" value="<?= $cliente['id_cliente'] ?>" class="form-check-input me-2">
                             <?= htmlspecialchars($cliente['nome']) ?>
                             <?php if (!empty($cliente['email'])): ?>
-                                <small class="text-muted"> - <?= htmlspecialchars($cliente['email']) ?></small>
+                                <small class=".text-danger"> - <?= htmlspecialchars($cliente['email']) ?></small>
                             <?php endif; ?>
                         </div>
                     </div>
