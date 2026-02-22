@@ -1,6 +1,6 @@
 <h2 class="text-light mb-3">Novo Torneio</h2>
 
-<form action="/torneio/salvar" method="POST" class="bg-dark text-light p-4 rounded">
+<form action="/torneio/salvarConfiguracao" method="POST" class="bg-dark text-light p-4 rounded">
     <div class="row mb-3">
         <!-- Nome do torneio -->
         <div class="col-md-6">

@@ -1,336 +1,212 @@
 <?php
 
+// Removida a subpasta /Torneio/ pois o arquivo está direto em Models
+require_once __DIR__ . '/../Models/Torneio.php';
+require_once __DIR__ . '/../Models/Cliente.php'; // Adicionei caso precise listar participantes
 require_once __DIR__ . '/../../core/Controller.php';
 require_once __DIR__ . '/../../core/AuthMiddleware.php';
-require_once __DIR__ . '/../Models/Torneio.php';
-require_once __DIR__ . '/../Models/Loja.php';
 
 class TorneioController extends Controller
 {
-
-    private $model;
-
-    public function __construct() {
-        // Instancia o model Torneio (já conecta ao banco)
-        $this->model = new Torneio();
-    }
-
-
     public function index()
     {
         AuthMiddleware::verificarLogin();
 
-        $torneioModel = new Torneio();
-        $torneios = $torneioModel->listarPorLoja($_SESSION['LOJA']['id_loja']);
+        $model = new Torneio();
+        $id_loja = $_SESSION['LOJA']['id_loja'];
 
-        // Adiciona campo amigável
-        foreach ($torneios as &$torneio) {
-            switch ($torneio['tipo_torneio']) {
-                case 'suico_bo1': $torneio['tipo_legivel'] = 'Suíço (Melhor de 1)'; break;
-                case 'suico_bo3': $torneio['tipo_legivel'] = 'Suíço (Melhor de 3)'; break;
-                case 'Elim_dupla_bo3': $torneio['tipo_legivel'] = 'Eliminação Dupla (Melhor de 3)'; break;
-                case 'Elim_dupla_bo1': $torneio['tipo_legivel'] = 'Eliminação Dupla (Melhor de 1)'; break;
-                default: $torneio['tipo_legivel'] = ucfirst($torneio['tipo_torneio']);
+        // Garanta que este método existe no seu Torneio.php atual
+        $torneios = $model->listarTodos($id_loja);
+
+        // Carrega a view usando o padrão do seu sistema
+        $this->view('torneio/index', ['torneios' => $torneios]);
+    }
+
+    // Atalho para a rota /torneio/criar
+    public function criar()
+    {
+        // Apenas chama o configuracao sem ID, o que limpa o formulário
+        $this->configuracao();
+    }
+
+    public function configuracao($id = null)
+    {
+        AuthMiddleware::verificarLogin();
+        $model = new Torneio();
+
+        // Model de CardGames para preencher o SELECT
+        require_once __DIR__ . '/../Models/CardGame.php';
+        $cardGameModel = new CardGame();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $dadosParaSalvar = $_POST;
+            $dadosParaSalvar['id_loja'] = $_SESSION['LOJA']['id_loja'];
+            // Se for novo (sem id_torneio), o status é aberto
+            if(empty($dadosParaSalvar['id_torneio'])) {
+                $dadosParaSalvar['status'] = 'aberto';
+            }
+
+            $id_salvo = $model->salvar($dadosParaSalvar);
+
+            if ($id_salvo) {
+                header("Location: /torneio/participante/$id_salvo");
+                exit;
             }
         }
 
-        $this->view('torneio/index', [
-            'torneios' => $torneios
-        ]);
-    }
-
-
-    public function criar()
-    {
-        AuthMiddleware::verificarLogin();
-
-        require_once __DIR__ . '/../Models/CardGame.php';
-        $cardgameModel = new CardGame();
-        $cardgames = $cardgameModel->listarTodos();
-
-        $this->view('torneio/configurar', [
-            'cardgames' => $cardgames
-        ]);
-    }
-
-    public function salvar()
-    {
-        AuthMiddleware::verificarLogin();
-
-        $torneioModel = new Torneio();
-
-        $dadosTorneio = [
-            'id_loja'      => $_SESSION['LOJA']['id_loja'],
-            'id_cardgame'  => $_POST['id_cardgame'],
-            'nome_torneio' => $_POST['nome_torneio'],
-            'tipo_torneio' => $_POST['tipo_torneio'],
-            'tempo_rodada' => $_POST['tempo_rodada'] ?? 50
+        $dados = [
+            'torneio' => $id ? $model->buscar($id, $_SESSION['LOJA']['id_loja']) : null,
+            'cardgames' => $cardGameModel->listarTodos()
         ];
 
-        $idTorneio = $torneioModel->criar($dadosTorneio);
-
-        $_SESSION['flash'] = "Torneio criado com sucesso!";
-        header("Location: /torneio/participantes/$idTorneio");
-        exit;
+        $this->view('torneio/configurar', $dados);
     }
 
-    public function participantes($id)
+    // Gerencia quem vai jogar (participante.php)
+    public function participante($id_torneio)
     {
         AuthMiddleware::verificarLogin();
+        $id_loja = $_SESSION['LOJA']['id_loja'];
+        $model = new Torneio();
 
-        require_once __DIR__ . '/../Models/Cliente.php';
-        $clienteModel = new Cliente();
+        // 1. Busca os dados do torneio para saber qual o id_cardgame
+        $torneio = $model->buscar($id_torneio, $id_loja);
 
-        $torneioModel = new Torneio();
-        $torneio = $torneioModel->buscar($id, $_SESSION['LOJA']['id_loja']);
+        if (!$torneio) {
+            header("Location: /torneio/index?erro=torneio_nao_encontrado");
+            exit;
+        }
 
-        $tiposTorneio = [
-            'suico_bo1'      => 'Suíço - Melhor de 1',
-            'suico_bo3'      => 'Suíço - Melhor de 3',
-            'elim_dupla_bo1' => 'Eliminação Dupla - Melhor de 1',
-            'elim_dupla_bo3' => 'Eliminação Dupla - Melhor de 3'
-        ];
-
-        $torneio['tipo_legivel'] = $tiposTorneio[$torneio['tipo_torneio']] ?? $torneio['tipo_torneio'];
-
-        $clientes = $clienteModel->listarPorLojaECardgame($_SESSION['LOJA']['id_loja'], $torneio['id_cardgame']);
+        // 2. Busca os clientes filtrados por LOJA e por CARDGAME do torneio
+        $clientes = $model->listarClientesParaTorneio($id_loja, $torneio['id_cardgame']);
 
         $this->view('torneio/participantes', [
-            'torneio'  => $torneio,
+            'torneio' => $torneio,
             'clientes' => $clientes
         ]);
     }
 
-    public function salvarParticipantes($id)
+    // O DIRECIONADOR: Decide qual gerenciador abrir
+    public function gerenciar($id_torneio)
     {
         AuthMiddleware::verificarLogin();
+        $model = new Torneio();
+        $torneio = $model->buscar($id_torneio, $_SESSION['LOJA']['id_loja']);
 
-        $torneioModel = new Torneio();
-        $participantes = $_POST['participantes'] ?? [];
-
-        $torneioModel->adicionarParticipantes($id, $participantes);
-
-        $_SESSION['flash'] = "Participantes adicionados com sucesso!";
-        header("Location: /torneio/gerenciar/$id");
+        if (strpos($torneio['tipo_torneio'], 'suico') !== false) {
+            header("Location: /torneioSuico/gerenciar/$id_torneio");
+        } else {
+            header("Location: /torneioEliminacao/gerenciar/$id_torneio");
+        }
         exit;
     }
 
-    public function gerenciar($id)
+    public function salvarConfiguracao()
     {
         AuthMiddleware::verificarLogin();
+        $model = new Torneio();
 
-        $torneioModel = new Torneio();
-        $torneio = $torneioModel->buscar($id, $_SESSION['LOJA']['id_loja']);
-
-        $tiposTorneio = [
-            'suico_bo1'      => 'Suíço - Melhor de 1',
-            'suico_bo3'      => 'Suíço - Melhor de 3',
-            'elim_dupla_bo1' => 'Eliminação Dupla - Melhor de 1',
-            'elim_dupla_bo3' => 'Eliminação Dupla - Melhor de 3'
+        $dados = [
+            'id_torneio'    => $_POST['id_torneio'] ?? null,
+            'id_loja'       => $_SESSION['LOJA']['id_loja'],
+            'nome_torneio'  => $_POST['nome_torneio'],
+            'id_cardgame'   => $_POST['id_cardgame'],
+            'tipo_torneio'  => $_POST['tipo_torneio'],
+            'tempo_rodada'  => $_POST['tempo_rodada'] ?? 50,
+            'status'        => 'aberto' // Status inicial antes de começar as rodadas
         ];
-        $torneio['tipo_legivel'] = $tiposTorneio[$torneio['tipo_torneio']]
-            ?? ($torneio['tipo_torneio'] ?? 'Não definido');
 
-        $rodadas = $torneioModel->listarRodadas($torneio['id_torneio']);
+        $id_salvo = $model->salvar($dados);
 
-        $participantes = $torneioModel->listarParticipantes($torneio['id_torneio']);
-        $numJogadores = count($participantes);
-        $maxRodadas = ceil(log($numJogadores, 2));
-
-        if (empty($rodadas)) {
-            if (str_starts_with($torneio['tipo_torneio'], 'suico')) {
-                $torneioModel->gerarPareamentosSuico($torneio['id_torneio'], $participantes, 1);
-            } elseif (str_starts_with($torneio['tipo_torneio'], 'elim_dupla')) {
-                $torneioModel->gerarPareamentosElimDupla($torneio['id_torneio'], $participantes, 1);
-            }
-            $rodadas = $torneioModel->listarRodadas($torneio['id_torneio']);
-        } else {
-            $ultimaRodada = end($rodadas);
-
-            if ($ultimaRodada['status'] === 'finalizada' && $ultimaRodada['numero_rodada'] < $maxRodadas) {
-                $numeroRodada = $ultimaRodada['numero_rodada'] + 1;
-
-                if (str_starts_with($torneio['tipo_torneio'], 'suico')) {
-                    $torneioModel->gerarPareamentosSuico($torneio['id_torneio'], $participantes, $numeroRodada);
-                } elseif (str_starts_with($torneio['tipo_torneio'], 'elim_dupla')) {
-                    $torneioModel->gerarPareamentosElimDupla($torneio['id_torneio'], $participantes, $numeroRodada);
-                }
-
-                $rodadas = $torneioModel->listarRodadas($torneio['id_torneio']);
-            }
-        }
-
-        $this->view('torneio/gerenciar', [
-            'torneio'      => $torneio,
-            'rodadas'      => $rodadas,
-            'torneioModel' => $torneioModel,
-            'maxRodadas'   => $maxRodadas
-        ]);
-    }
-    public function salvarResultado($id_torneio, $id_rodada)
-    {
-        AuthMiddleware::verificarLogin();
-
-        $torneioModel = new Torneio();
-
-        // Salvar resultados enviados
-        foreach ($_POST['resultados'] as $id_partida => $resultado) {
-            $torneioModel->salvarResultadoPartida($id_partida, $resultado);
-        }
-
-        // Finalizar rodada
-        $torneioModel->finalizarRodada($id_rodada);
-
-        // Buscar dados do torneio e rodadas
-        $torneio = $torneioModel->buscar($id_torneio, $_SESSION['LOJA']['id_loja']);
-        $rodadas = $torneioModel->listarRodadas($id_torneio);
-
-        // Calcular número máximo de rodadas
-        $participantes = $torneioModel->listarParticipantes($id_torneio);
-        $numJogadores = count($participantes);
-        $maxRodadas = ceil(log($numJogadores, 2));
-
-        $ultimaRodada = end($rodadas);
-
-        // Se ainda não chegou na última rodada, gerar próxima
-        if ($ultimaRodada['numero_rodada'] < $maxRodadas) {
-            $numeroRodada = $ultimaRodada['numero_rodada'] + 1;
-
-            if (str_starts_with($torneio['tipo_torneio'], 'suico')) {
-                $torneioModel->gerarPareamentosSuico($id_torneio, $participantes, $numeroRodada);
-            } elseif (str_starts_with($torneio['tipo_torneio'], 'elim_dupla')) {
-                $torneioModel->gerarPareamentosElimDupla($id_torneio, $participantes, $numeroRodada);
-            }
-        }
-
-        header("Location: /torneio/gerenciar/$id_torneio");
+        // Redireciona para o método ListarParticipantes
+        header("Location: /torneio/ListarParticipantes/$id_salvo");
         exit;
     }
 
-    public function resultado($id)
-    {
-        AuthMiddleware::verificarLogin();
+	public function ListarParticipantes($id_torneio)
+	{
+		AuthMiddleware::verificarLogin();
+		$model = new Torneio();
+		$id_loja = $_SESSION['LOJA']['id_loja'];
 
-        $torneioModel = new Torneio();
-        $resultado = $torneioModel->classificacaoFinal($id);
+		// 1. Busca os dados brutos do torneio
+		$torneio = $model->buscar($id_torneio, $id_loja);
 
-        $this->view('torneio/resultado', [
-            'resultado' => $resultado
-        ]);
-    }
+		if (!$torneio) {
+			header("Location: /torneio/index?erro=nao_encontrado");
+			exit;
+		}
 
-    public function pareamentos($id, $rodada)
-    {
-        AuthMiddleware::verificarLogin();
+		// 2. BUSCA O NOME DO CARDGAME (Para resolver a linha 3 da view)
+		// Se você já tiver um método getNomeCardGame, use-o, senão podemos injetar manualmente:
+		require_once __DIR__ . '/../Models/CardGame.php';
+		$cgModel = new CardGame();
+		$dadosCG = $cgModel->buscar($torneio['id_cardgame']); // Ajuste o nome do método conforme seu model
+		$torneio['cardgame'] = $dadosCG['nome'] ?? 'N/A';
 
-        $torneioModel = new Torneio();
-        $pareamentos = $torneioModel->listarPareamentos($id, $rodada);
+		// 3. CRIA O TIPO LEGÍVEL (Para resolver a linha 4 da view)
+		$tipos = [
+			'suico_bo1' => 'Suíço (MD1)',
+			'suico_bo3' => 'Suíço (MD3)',
+			'elim_dupla_bo1' => 'Eliminação Dupla (MD1)',
+			'elim_dupla_bo3' => 'Eliminação Dupla (MD3)'
+		];
+		$torneio['tipo_legivel'] = $tipos[$torneio['tipo_torneio']] ?? $torneio['tipo_torneio'];
 
-        $this->view('torneio/pareamentos', [
-            'pareamentos' => $pareamentos,
-            'rodada'      => $rodada
-        ]);
-    }
+		// 4. Busca os clientes filtrados
+		$clientes = $model->listarClientesParaTorneio($id_loja, $torneio['id_cardgame']);
 
-    public function verPareamento($id_torneio, $numero_rodada)
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+		$this->view('torneio/participantes', [
+			'torneio' => $torneio,
+			'clientes' => $clientes
+		]);
+	}
 
-        $torneio = new Torneio();
-        $pareamentos = $torneio->listarPareamentos($id_torneio, $numero_rodada);
+	public function salvarParticipantes()
+	{
+		AuthMiddleware::verificarLogin();
+		$model = new Torneio();
 
-        $loja = null;
-        if (!empty($_SESSION['LOJA']['id_loja'])) {
-            $loja = Loja::buscarPorId($_SESSION['LOJA']['id_loja']);
-        }
+		$id_torneio = $_POST['id_torneio'];
+		$selecionados = $_POST['participantes'] ?? [];
 
-        if (!$loja || !is_array($loja)) {
-            $loja = [
-                'id_loja' => 0,
-                'nome_loja' => 'Loja não encontrada',
-                'logo' => ''
-            ];
-        }
+		if (empty($selecionados)) {
+			header("Location: /torneio/ListarParticipantes/$id_torneio?erro=selecione_ao_menos_um");
+			exit;
+		}
 
-        require __DIR__ . '/../Views/torneio/pareamento.php';
-    }
+		// 1. Salva os participantes na tabela intermediária (id_torneio, id_cliente)
+		$model->vincularParticipantes($id_torneio, $selecionados);
 
-    public function verPontuacao($id_torneio, $numero_rodada)
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+		// 2. Busca o tipo do torneio para saber para onde redirecionar
+		$torneio = $model->buscar($id_torneio, $_SESSION['LOJA']['id_loja']);
 
-        $torneio = new Torneio();
+		// 3. Redirecionamento Inteligente
+		if (strpos($torneio['tipo_torneio'], 'suico') !== false) {
+			// Envia para o Controller do Suíço
+			header("Location: /Torneiosuico/gerenciar/$id_torneio");
+		} else {
+			// Envia para o Controller da Eliminatória
+			header("Location: /Torneioeliminacao/gerenciar/$id_torneio");
+		}
+		exit;
+	}
 
-        if (str_starts_with($_GET['tipo_torneio'], 'suico')) {
-            $classificacao = $torneio->classificacaoSuicoParcial($id_torneio, $numero_rodada);
-        } elseif (str_starts_with($_GET['tipo_torneio'], 'elim_dupla')) {
-            $classificacao = $torneio->classificacaoElimDuplaParcial($id_torneio, $numero_rodada);
-        } else {
-            $classificacao = [];
-        }
+	public function excluir($id) {
+		AuthMiddleware::verificarLogin();
+		$id_loja = $_SESSION['LOJA']['id_loja'];
 
-        $loja = null;
-        if (!empty($_SESSION['LOJA']['id_loja'])) {
-            $loja = Loja::buscarPorId($_SESSION['LOJA']['id_loja']);
-        }
+		$model = new Torneio();
 
-        if (!$loja || !is_array($loja)) {
-            $loja = [
-                'id_loja' => 0,
-                'nome_loja' => 'Loja não encontrada',
-                'logo' => ''
-            ];
-        }
+		// Tenta a exclusão completa
+		if ($model->excluirTorneioCompleto($id, $id_loja)) {
+			// Você pode usar uma variável de sessão para exibir alertas na View
+			$_SESSION['msg_sucesso'] = "Torneio e todos os dados vinculados foram removidos.";
+		} else {
+			$_SESSION['msg_erro'] = "Erro crítico ao tentar excluir o torneio.";
+		}
 
-        require __DIR__ . '/../Views/torneio/pontuacao.php';
-    }
-public function verResultadoSuico($id_torneio)
-{
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    $torneioModel = new Torneio();
-
-    $classificacaoFinal = $torneioModel->classificacaoSuico($id_torneio);
-
-    $dadosTorneio = $torneioModel->buscar($id_torneio, $_SESSION['LOJA']['id_loja']);
-
-    // calcular número máximo de rodadas
-    $participantes = $torneioModel->listarParticipantes($id_torneio);
-    $numJogadores = count($participantes);
-    $maxRodadas = ceil(log($numJogadores, 2));
-
-    $loja = null;
-    if (!empty($_SESSION['LOJA']['id_loja'])) {
-        $loja = Loja::buscarPorId($_SESSION['LOJA']['id_loja']);
-    }
-
-    if (!$loja || !is_array($loja)) {
-        $loja = [
-            'id_loja' => 0,
-            'nome_loja' => 'Loja não encontrada',
-            'logo' => ''
-        ];
-    }
-
-    // passa também $maxRodadas para a view
-    require __DIR__ . '/../Views/torneio/resultadosuico.php';
+		header("Location: /torneio");
+		exit;
+	}
 }
-
-    public function excluir($idTorneio) {
-        if ($this->model->excluir($idTorneio)) {
-            $_SESSION['msg'] = "Torneio excluído com sucesso!";
-        } else {
-            $_SESSION['msg'] = "Erro ao excluir torneio.";
-        }
-        header("Location: /torneio");
-        exit;
-    }
-
-}
-

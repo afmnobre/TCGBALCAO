@@ -17,5 +17,12 @@ class CardGame
         $stmt = $this->db->query("SELECT * FROM cardgames ORDER BY nome");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function buscar($id_cardgame)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM cardgames WHERE id_cardgame = ?");
+        $stmt->execute([$id_cardgame]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }
 

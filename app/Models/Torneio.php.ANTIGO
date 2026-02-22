@@ -1,0 +1,941 @@
+<?php
+
+require_once __DIR__ . '/../../core/Database.php';
+
+use Core\Database;
+
+class Torneio
+{
+    private $db;
+
+    public function __construct()
+    {
+        $this->db = Database::getInstance();
+    }
+
+    /* =========================
+       CRUD BÁSICO DE TORNEIOS
+    ========================== */
+
+    public function listarPorLoja($id_loja)
+    {
+        $sql = "SELECT t.*, cg.nome AS cardgame
+                FROM torneios t
+                INNER JOIN cardgames cg ON cg.id_cardgame = t.id_cardgame
+                WHERE t.id_loja = :id_loja
+                ORDER BY t.data_criacao DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_loja' => $id_loja]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function criar($dados)
+    {
+        $sql = "INSERT INTO torneios (id_loja, id_cardgame, nome_torneio, tipo_torneio, tempo_rodada)
+                VALUES (:id_loja, :id_cardgame, :nome_torneio, :tipo_torneio, :tempo_rodada)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'id_loja'      => $dados['id_loja'],
+            'id_cardgame'  => $dados['id_cardgame'],
+            'nome_torneio' => $dados['nome_torneio'],
+            'tipo_torneio' => $dados['tipo_torneio'],
+            'tempo_rodada' => $dados['tempo_rodada']
+        ]);
+        return $this->db->lastInsertId();
+    }
+
+    public function buscar($id_torneio, $id_loja)
+    {
+        $sql = "SELECT t.*, cg.nome AS cardgame
+                FROM torneios t
+                INNER JOIN cardgames cg ON cg.id_cardgame = t.id_cardgame
+                WHERE t.id_torneio = :id_torneio AND t.id_loja = :id_loja";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+                'id_torneio' => $id_torneio,
+                'id_loja'    => $id_loja
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function adicionarParticipantes($id_torneio, $participantes)
+    {
+        foreach ($participantes as $id_cliente) {
+            $sql = "INSERT INTO torneio_participantes (id_torneio, id_cliente)
+                    VALUES (:id_torneio, :id_cliente)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                'id_torneio' => $id_torneio,
+                'id_cliente' => $id_cliente
+            ]);
+        }
+    }
+
+    public function listarParticipantes($id_torneio) {
+        $sql = "SELECT c.id_cliente, c.nome
+                FROM torneio_participantes tp
+                INNER JOIN clientes c ON c.id_cliente = tp.id_cliente
+                WHERE tp.id_torneio = :id_torneio";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_torneio' => $id_torneio]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listarRodadas($id_torneio)
+    {
+        $sql = "SELECT * FROM torneio_rodadas WHERE id_torneio = :id_torneio ORDER BY numero_rodada ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_torneio' => $id_torneio]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+public function finalizarRodada($id_rodada) {
+    $stmt = $this->db->prepare("UPDATE torneio_rodadas SET status = 'finalizada' WHERE id_rodada = ?");
+    return $stmt->execute([$id_rodada]);
+}
+
+
+
+    public function salvarResultadoPartida($id_partida, $resultado)
+    {
+        $sql = "UPDATE torneio_partidas SET resultado = :resultado WHERE id_partida = :id_partida";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'resultado'  => $resultado,
+            'id_partida' => $id_partida
+        ]);
+    }
+
+    public function listarPareamentos($id_torneio, $rodada)
+    {
+        $sql = "SELECT tp.id_partida, c1.nome AS jogador1, c2.nome AS jogador2, tp.resultado
+                FROM torneio_partidas tp
+                INNER JOIN clientes c1 ON c1.id_cliente = tp.id_jogador1
+                LEFT JOIN clientes c2 ON c2.id_cliente = tp.id_jogador2
+                INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+                WHERE tr.id_torneio = :id_torneio AND tr.numero_rodada = :rodada
+                ORDER BY tp.id_partida ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'id_torneio' => $id_torneio,
+            'rodada'     => $rodada
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /* =========================
+       PAREAMENTO SUÍÇO
+    ========================== */
+public function gerarPareamentosTorneioSuico($id_torneio, $jogadores, $numeroRodada)
+{
+    $pareamentos = [];
+
+    // 1. Criar rodada
+    $stmt = $this->db->prepare("INSERT INTO torneio_rodadas (id_torneio, numero_rodada, status) VALUES (?, ?, 'em_andamento')");
+    $stmt->execute([$id_torneio, $numeroRodada]);
+    $idRodada = $this->db->lastInsertId();
+
+    // 2. Pegar classificação da rodada anterior para parear
+    $classificacaoAnterior = $this->classificacaoTorneioSuicoParcial($id_torneio, $numeroRodada - 1);
+    $ordemInvertida = array_column($classificacaoAnterior, null, 'id_cliente');
+
+    // 3. Ordenar os jogadores que entraram no método
+    usort($jogadores, function($a, $b) use ($ordemInvertida) {
+        $pA = $ordemInvertida[$a['id_cliente']]['pontos'] ?? 0;
+        $pB = $ordemInvertida[$b['id_cliente']]['pontos'] ?? 0;
+        return $pB <=> $pA;
+    });
+
+    // 4. Lógica de BYE
+    if (count($jogadores) % 2 !== 0) {
+        $sql = "SELECT id_jogador1 FROM torneio_partidas tp
+                JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+                WHERE tr.id_torneio = ? AND tp.id_jogador2 IS NULL";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id_torneio]);
+        $jaTiveramBye = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $byeIndex = count($jogadores) - 1;
+        for ($i = count($jogadores) - 1; $i >= 0; $i--) {
+            if (!in_array($jogadores[$i]['id_cliente'], $jaTiveramBye)) {
+                $byeIndex = $i;
+                break;
+            }
+        }
+        $byePlayer = $jogadores[$byeIndex];
+        unset($jogadores[$byeIndex]);
+        $jogadores = array_values($jogadores);
+
+        $this->registrarByeSuico($byePlayer['id_cliente'], $idRodada);
+        $pareamentos[] = [
+            'id_partida' => $this->db->lastInsertId(),
+            'jogador1'   => $byePlayer['nome'],
+            'jogador2'   => 'BYE',
+            'resultado'  => 'jogador1_vitoria'
+        ];
+    }
+
+    // 5. Inserir partidas pareadas
+    for ($i = 0; $i < count($jogadores); $i += 2) {
+        if (isset($jogadores[$i+1])) {
+            $stmt = $this->db->prepare("INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2) VALUES (?, ?, ?)");
+            $stmt->execute([$idRodada, $jogadores[$i]['id_cliente'], $jogadores[$i+1]['id_cliente']]);
+            $pareamentos[] = [
+                'id_partida' => $this->db->lastInsertId(),
+                'jogador1'   => $jogadores[$i]['nome'],
+                'jogador2'   => $jogadores[$i+1]['nome'],
+                'resultado'  => null
+            ];
+        }
+    }
+
+    return $pareamentos;
+}
+
+private function registrarByeSuico($id_jogador, $idRodada)
+{
+    $sql = "INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2, resultado)
+            VALUES (:id_rodada, :id_jogador1, NULL, 'jogador1_vitoria')";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([
+        'id_rodada'   => $idRodada,
+        'id_jogador1' => $id_jogador
+    ]);
+}
+
+    /* =========================
+       CLASSIFICAÇÃO SUÍÇO
+    ========================== */
+public function classificacaoTorneioSuicoParcial($id_torneio, $numero_rodada)
+{
+    $sql = "SELECT DISTINCT tp.id_partida, tp.id_jogador1, tp.id_jogador2, tp.resultado
+            FROM torneio_partidas tp
+            INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+            WHERE tr.id_torneio = :id_torneio
+              AND tr.numero_rodada <= :numero_rodada";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute(['id_torneio' => $id_torneio, 'numero_rodada' => $numero_rodada]);
+    $partidas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $sqlJogadores = "SELECT c.id_cliente, c.nome
+                     FROM torneio_participantes tpart
+                     INNER JOIN clientes c ON c.id_cliente = tpart.id_cliente
+                     WHERE tpart.id_torneio = :id_torneio";
+    $stmtJogadores = $this->db->prepare($sqlJogadores);
+    $stmtJogadores->execute(['id_torneio' => $id_torneio]);
+    $jogadores = $stmtJogadores->fetchAll(PDO::FETCH_ASSOC);
+
+    $mapaPontos = [];
+    $stats = [];
+    foreach ($jogadores as $j) {
+        $id_c = $j['id_cliente'];
+        $mapaPontos[$id_c] = 0;
+        $stats[$id_c] = [
+            'vitorias' => 0, 'derrotas' => 0, 'empates' => 0,
+            'bye' => 0, 'vitorias_2x0' => 0, 'pontos' => 0, 'forca_oponentes' => 0
+        ];
+    }
+
+    foreach ($partidas as $p) {
+        $id1 = $p['id_jogador1'];
+        $id2 = $p['id_jogador2'];
+        $res = $p['resultado'];
+
+        if ($id1 && !$id2) {
+            $mapaPontos[$id1] += 3;
+            $stats[$id1]['vitorias']++;
+            $stats[$id1]['bye']++;
+        } elseif ($id1 && $id2) {
+            switch ($res) {
+                case 'jogador1_2x0':
+                    $mapaPontos[$id1] += 3;
+                    $stats[$id1]['vitorias']++;
+                    $stats[$id1]['vitorias_2x0']++;
+                    $stats[$id2]['derrotas']++;
+                    break;
+                case 'jogador1_2x1':
+                    $mapaPontos[$id1] += 3;
+                    $stats[$id1]['vitorias']++;
+                    $stats[$id2]['derrotas']++;
+                    break;
+                case 'jogador2_2x0':
+                    $mapaPontos[$id2] += 3;
+                    $stats[$id2]['vitorias']++;
+                    $stats[$id2]['vitorias_2x0']++;
+                    $stats[$id1]['derrotas']++;
+                    break;
+                case 'jogador2_2x1':
+                    $mapaPontos[$id2] += 3;
+                    $stats[$id2]['vitorias']++;
+                    $stats[$id1]['derrotas']++;
+                    break;
+                case 'jogador1_vitoria':
+                    $mapaPontos[$id1] += 3;
+                    $stats[$id1]['vitorias']++;
+                    $stats[$id2]['derrotas']++;
+                    break;
+                case 'jogador2_vitoria':
+                    $mapaPontos[$id2] += 3;
+                    $stats[$id2]['vitorias']++;
+                    $stats[$id1]['derrotas']++;
+                    break;
+                case 'empate':
+                    $mapaPontos[$id1] += 1;
+                    $mapaPontos[$id2] += 1;
+                    $stats[$id1]['empates']++;
+                    $stats[$id2]['empates']++;
+                    break;
+            }
+        }
+    }
+
+    // 4. Formata array final
+    $classificacao = [];
+    foreach ($jogadores as $j) {
+        $id_c = $j['id_cliente'];
+        $classificacao[] = [
+            'id_cliente'      => $id_c,
+            'nome'            => $j['nome'],
+            'pontos'          => $mapaPontos[$id_c],
+            'vitorias'        => $stats[$id_c]['vitorias'],
+            'derrotas'        => $stats[$id_c]['derrotas'],
+            'empates'         => $stats[$id_c]['empates'],
+            'bye'             => $stats[$id_c]['bye'],
+            'vitorias_2x0'    => $stats[$id_c]['vitorias_2x0'],
+            'forca_oponentes' => 0
+        ];
+    }
+
+    // 5. Buchholz (Força dos oponentes)
+    foreach ($classificacao as &$jogador) {
+        $forca = 0;
+        $id_atual = $jogador['id_cliente'];
+        foreach ($partidas as $p) {
+            $adv = null;
+            if ($p['id_jogador1'] == $id_atual) $adv = $p['id_jogador2'];
+            elseif ($p['id_jogador2'] == $id_atual) $adv = $p['id_jogador1'];
+
+            if ($adv && isset($mapaPontos[$adv])) {
+                $forca += $mapaPontos[$adv];
+            }
+        }
+        $jogador['forca_oponentes'] = $forca;
+    }
+    unset($jogador);
+
+    // 6. Ordenação: Pontos > Buchholz > Vitórias 2x0
+    usort($classificacao, function ($a, $b) {
+        if ($a['pontos'] != $b['pontos']) return $b['pontos'] <=> $a['pontos'];
+        if ($a['forca_oponentes'] != $b['forca_oponentes']) return $b['forca_oponentes'] <=> $a['forca_oponentes'];
+        return $b['vitorias_2x0'] <=> $a['vitorias_2x0'];
+    });
+
+    // 7. Marcar Campeão
+    if (!empty($classificacao)) {
+        $classificacao[0]['nome'] .= " 🏆 Campeão";
+    }
+
+    return $classificacao;
+}
+
+public function classificacaoTorneioSuico($id_torneio)
+{
+    $rodadas = $this->listarRodadas($id_torneio);
+    $ultimaRodada = !empty($rodadas) ? end($rodadas)['numero_rodada'] : 0;
+
+    // Sempre calcula a classificação até a última rodada
+    $classificacao = $this->classificacaoTorneioSuicoParcial($id_torneio, $ultimaRodada);
+
+    // Se todas finalizadas, marca o torneio como finalizado
+    $todasFinalizadas = true;
+    foreach ($rodadas as $r) {
+        if ($r['status'] !== 'finalizada') {
+            $todasFinalizadas = false;
+            break;
+        }
+    }
+
+    if ($todasFinalizadas) {
+        $sql = "UPDATE torneios SET status = 'finalizado' WHERE id_torneio = :id_torneio";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_torneio' => $id_torneio]);
+    }
+
+    return $classificacao;
+}
+
+
+
+    /* =========================
+       ELIMINAÇÃO DUPLA - NOVO
+    ========================== */
+public function gerarPareamentosTorneioEliminacaoDupla($id_torneio, $numeroRodada) {
+    // 1. TRAVA ABSOLUTA
+    $sql = "SELECT id_rodada FROM torneio_rodadas WHERE id_torneio = ? AND numero_rodada = ?";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_torneio, $numeroRodada]);
+    if ($stmt->fetch()) {
+        return false;
+    }
+
+    // Se for a RODADA 1
+    if ($numeroRodada == 1) {
+        $participantes = $this->listarParticipantes($id_torneio);
+        if (!empty($participantes)) {
+            $this->criarRodadaEPartidas($id_torneio, 1, 'WB', $participantes);
+            return true;
+        }
+        return false;
+    }
+
+    // --- LÓGICA DA GRANDE FINAL ---
+    // Buscamos quem tem 0 derrotas (Carlos) e quem tem 1 derrota (Felipe)
+// --- LÓGICA DA GRANDE FINAL ---
+$invictos = $this->buscarSobreviventesPorDerrotas($id_torneio, 0);
+$comUmaDerrota = $this->buscarSobreviventesPorDerrotas($id_torneio, 1);
+
+// Se só existe 1 de cada, é a finalíssima
+if (count($invictos) === 1 && count($comUmaDerrota) === 1) {
+    // Verifica se já não existe essa partida para evitar duplicidade
+    $this->criarRodadaEPartidas($id_torneio, $numeroRodada, 'WB', [
+        ['id_cliente' => $invictos[0]['id_cliente']],
+        ['id_cliente' => $comUmaDerrota[0]['id_cliente']]
+    ]);
+    return true;
+}
+
+// Se só sobrou 1 invicto e NINGUÉM com 1 derrota, o torneio ACABOU
+if (count($invictos) === 1 && count($comUmaDerrota) === 0) {
+    return false; // Retorna false para o Controller saber que não há o que gerar
+}
+
+    // --- LÓGICA DAS RODADAS INTERMEDIÁRIAS (Se não for a final) ---
+    $vencWB = $this->listarVencedoresTorneioEliminacaoDuplaWB($id_torneio, $numeroRodada - 1);
+    $perdWB = $this->listarPerdedoresTorneioEliminacaoDuplaWB($id_torneio, $numeroRodada - 1);
+    $vencLB = $this->listarVencedoresTorneioEliminacaoDuplaLB($id_torneio, $numeroRodada - 1);
+
+    $criouQualquer = false;
+
+    // Winner Bracket
+    if (count($vencWB) > 1) {
+        $this->criarRodadaEPartidas($id_torneio, $numeroRodada, 'WB', array_values($vencWB));
+        $criouQualquer = true;
+    }
+
+    // Loser Bracket
+    $jogadoresLB = array_merge($vencLB, $perdWB);
+    if (!empty($jogadoresLB)) {
+        $this->criarRodadaEPartidas($id_torneio, $numeroRodada, 'LB', array_values($jogadoresLB));
+        $criouQualquer = true;
+    }
+
+    return $criouQualquer;
+}
+
+/**
+ * Mantenha os métodos SQL de listarVencedores com a filtragem
+ * NOT IN (perdedores) para a WB, conforme enviado anteriormente.
+ */
+
+/**
+ * Função Unificada para criar Rodada e Partidas
+ * Substitui as antigas 'inserirPartidas' e 'criarRodadaFinal'
+ */
+private function criarRodadaEPartidas($id_torneio, $num, $tipo, $jogadores) {
+    if (empty($jogadores)) return;
+
+    $stmt = $this->db->prepare("INSERT INTO torneio_rodadas (id_torneio, numero_rodada, status, tipo_chave) VALUES (?, ?, 'em_andamento', ?)");
+    $stmt->execute([$id_torneio, $num, $tipo]);
+    $idRodada = $this->db->lastInsertId();
+
+    for ($i = 0; $i < count($jogadores); $i += 2) {
+        $j1 = $jogadores[$i];
+        $j2 = $jogadores[$i + 1] ?? null;
+
+        $resultado = ($j2 === null) ? 'jogador1_vitoria' : NULL;
+
+        $stmt = $this->db->prepare("INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2, resultado) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$idRodada, $j1["id_cliente"], $j2 ? $j2["id_cliente"] : null, $resultado]);
+    }
+}
+
+// Busca quem perdeu na WB na rodada específica (para descer para a LB)
+public function listarPerdedoresTorneioEliminacaoDuplaWB($id_torneio, $numero_rodada) {
+    $sql = "SELECT DISTINCT c.* FROM clientes c
+            JOIN torneio_partidas p ON (c.id_cliente = p.id_jogador1 OR c.id_cliente = p.id_jogador2)
+            JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+            WHERE r.id_torneio = ? AND r.numero_rodada = ? AND r.tipo_chave = 'WB'
+            AND (
+                (p.resultado LIKE 'jogador1%' AND c.id_cliente = p.id_jogador2) OR
+                (p.resultado LIKE 'jogador2%' AND c.id_cliente = p.id_jogador1)
+            )";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_torneio, $numero_rodada]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+// Busca apenas quem ganhou a última partida E nunca perdeu nenhuma no torneio todo
+public function listarVencedoresTorneioEliminacaoDuplaWB($id_torneio, $numero_rodada) {
+    // Busca apenas quem ganhou na rodada anterior dentro da chave WB
+    $sql = "SELECT c.* FROM clientes c
+            JOIN torneio_partidas p ON (c.id_cliente = p.id_jogador1 OR c.id_cliente = p.id_jogador2)
+            JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+            WHERE r.id_torneio = ? AND r.numero_rodada = ? AND r.tipo_chave = 'WB'
+            AND (
+                (p.resultado LIKE 'jogador1%' AND c.id_cliente = p.id_jogador1) OR
+                (p.resultado LIKE 'jogador2%' AND c.id_cliente = p.id_jogador2)
+            )";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_torneio, $numero_rodada]);
+    $vencedores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Filtro de segurança: Se o cara já tem uma derrota no histórico, ele não pode estar na WB
+    return array_values(array_filter($vencedores, function($j) use ($id_torneio) {
+        $st = $this->db->prepare("SELECT COUNT(*) FROM torneio_partidas p JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+                                  WHERE r.id_torneio = ? AND ((p.id_jogador1 = ? AND p.resultado LIKE 'jogador2%')
+                                  OR (p.id_jogador2 = ? AND p.resultado LIKE 'jogador1%'))");
+        $st->execute([$id_torneio, $j['id_cliente'], $j['id_cliente']]);
+        return $st->fetchColumn() == 0;
+    }));
+}
+
+public function verificarTorneioFinalizado($id_torneio) {
+    // 1. Conta quantos jogadores ainda têm menos de 2 derrotas
+    $sql = "SELECT COUNT(*) FROM (
+                SELECT c.id_cliente
+                FROM clientes c
+                LEFT JOIN torneio_partidas p ON (c.id_cliente = p.id_jogador1 OR c.id_cliente = p.id_jogador2)
+                JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+                WHERE r.id_torneio = ?
+                GROUP BY c.id_cliente
+                HAVING SUM(
+                    CASE
+                        WHEN (p.id_jogador1 = c.id_cliente AND p.resultado LIKE 'jogador2%') THEN 1
+                        WHEN (p.id_jogador2 = c.id_cliente AND p.resultado LIKE 'jogador1%') THEN 1
+                        ELSE 0
+                    END
+                ) < 2
+            ) AS sobreviventes";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_torneio]);
+    $sobreviventes = $stmt->fetchColumn();
+
+    // 2. Se houver mais de 1 sobrevivente, o torneio NÃO acabou.
+    // (Mesmo que a Loser Bracket tenha acabado, falta a Final entre os 2 que sobraram)
+    return ($sobreviventes <= 1);
+}
+
+public function listarVencedoresTorneioEliminacaoDuplaLB($id_torneio, $numero_rodada) {
+    // Busca jogadores que venceram na rodada anterior na chave LB
+    $sql = "SELECT DISTINCT c.* FROM clientes c
+            JOIN torneio_partidas p ON (c.id_cliente = p.id_jogador1 OR c.id_cliente = p.id_jogador2)
+            JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+            WHERE r.id_torneio = ? AND r.numero_rodada = ? AND r.tipo_chave = 'LB'
+            AND (
+                (p.resultado LIKE 'jogador1%' AND c.id_cliente = p.id_jogador1) OR
+                (p.resultado LIKE 'jogador2%' AND c.id_cliente = p.id_jogador2)
+            )";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_torneio, $numero_rodada]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+public function buscarFinalistaTorneioEliminacaoDuplaWB($id_torneio) {
+    $sql = "SELECT
+                CASE
+                    WHEN tp.resultado LIKE 'jogador1%' THEN tp.id_jogador1
+                    WHEN tp.resultado LIKE 'jogador2%' THEN tp.id_jogador2
+                END AS id_cliente
+            FROM torneio_partidas tp
+            INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+            WHERE tr.id_torneio = :id_torneio AND tr.tipo_chave = 'WB'
+            ORDER BY tr.numero_rodada DESC LIMIT 1";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute(['id_torneio' => $id_torneio]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+public function buscarFinalistaTorneioEliminacaoDuplaLB($id_torneio) {
+    $sql = "SELECT
+                CASE
+                    WHEN tp.resultado LIKE 'jogador1%' THEN tp.id_jogador1
+                    WHEN tp.resultado LIKE 'jogador2%' THEN tp.id_jogador2
+                END AS id_cliente
+            FROM torneio_partidas tp
+            INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+            WHERE tr.id_torneio = :id_torneio AND tr.tipo_chave = 'LB'
+            ORDER BY tr.numero_rodada DESC LIMIT 1";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute(['id_torneio' => $id_torneio]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+public function buscarTorneioEliminacaoDupla($id_torneio) {
+    $stmt = $this->db->prepare("SELECT * FROM torneios WHERE id_torneio = ?");
+    $stmt->execute([$id_torneio]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result ?: []; // nunca retorna false, retorna array vazio
+}
+
+    public function classificacaoTorneioEliminacaoDuplaParcial($id_torneio, $numeroRodada)
+    {
+        // Buscar partidas até a rodada informada
+        $sql = "SELECT tp.id_partida, tp.id_jogador1, tp.id_jogador2, tp.resultado
+                FROM torneio_partidas tp
+                INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+                WHERE tr.id_torneio = :id_torneio AND tr.numero_rodada <= :rodada";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_torneio' => $id_torneio, 'rodada' => $numeroRodada]);
+        $partidas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Buscar jogadores
+        $sqlJogadores = "SELECT c.id_cliente, c.nome
+                         FROM torneio_participantes tp
+                         INNER JOIN clientes c ON c.id_cliente = tp.id_cliente
+                         WHERE tp.id_torneio = :id_torneio";
+        $stmtJogadores = $this->db->prepare($sqlJogadores);
+        $stmtJogadores->execute(['id_torneio' => $id_torneio]);
+        $jogadores = $stmtJogadores->fetchAll(PDO::FETCH_ASSOC);
+
+        // Inicializar estatísticas
+        $stats = [];
+        foreach ($jogadores as $j) {
+            $stats[$j['id_cliente']] = [
+                'id_cliente' => $j['id_cliente'],
+                'nome'       => $j['nome'],
+                'vitorias'   => 0,
+                'derrotas'   => 0,
+                'status'     => 'ativo'
+            ];
+        }
+
+        // Processar resultados
+        foreach ($partidas as $p) {
+            $id1 = $p['id_jogador1'];
+            $id2 = $p['id_jogador2'];
+            $res = $p['resultado'];
+
+            if ($res === 'jogador1_vitoria' || $res === 'jogador1_2x0' || $res === 'jogador1_2x1') {
+                $stats[$id1]['vitorias']++;
+                $stats[$id2]['derrotas']++;
+            } elseif ($res === 'jogador2_vitoria' || $res === 'jogador2_2x0' || $res === 'jogador2_2x1') {
+                $stats[$id2]['vitorias']++;
+                $stats[$id1]['derrotas']++;
+            }
+        }
+
+        // Atualizar status
+        foreach ($stats as $id => &$s) {
+            if ($s['derrotas'] >= 2) {
+                $s['status'] = 'eliminado';
+            } elseif ($s['derrotas'] === 1) {
+                $s['status'] = 'repescagem';
+            } else {
+                $s['status'] = 'winner';
+            }
+        }
+
+        return array_values($stats);
+    }
+    public function classificacaoTorneioEliminacaoDuplaFinal($id_torneio)
+    {
+        // Usa todas as rodadas (PHP_INT_MAX garante pegar tudo)
+        $parcial = $this->classificacaoElimDuplaParcial($id_torneio, PHP_INT_MAX);
+
+        // Ordenar: campeão (0 derrotas), vice (1 derrota na final), demais por ordem de eliminação
+        usort($parcial, function($a, $b) {
+            // Campeão primeiro
+            if ($a['status'] === 'winner' && $b['status'] !== 'winner') return -1;
+            if ($b['status'] === 'winner' && $a['status'] !== 'winner') return 1;
+
+            // Depois quem está na repescagem (1 derrota)
+            if ($a['status'] === 'repescagem' && $b['status'] === 'eliminado') return -1;
+            if ($b['status'] === 'repescagem' && $a['status'] === 'eliminado') return 1;
+
+            // Por fim, eliminados ordenados por número de derrotas
+            return $a['derrotas'] <=> $b['derrotas'];
+        });
+
+        // Marcar campeão
+        if (!empty($parcial)) {
+            $parcial[0]['nome'] .= " 🏆 Campeão";
+        }
+
+        // Atualizar status do torneio
+        $sql = "UPDATE torneios SET status = 'finalizado' WHERE id_torneio = :id_torneio";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id_torneio' => $id_torneio]);
+
+        return $parcial;
+    }
+
+public function listarPareamentoTorneioEliminacaoDuplaWB($id_torneio, $rodada)
+{
+    $sql = "SELECT tp.id_partida, c1.nome AS jogador1, c2.nome AS jogador2, tp.resultado
+            FROM torneio_partidas tp
+            INNER JOIN clientes c1 ON c1.id_cliente = tp.id_jogador1
+            LEFT JOIN clientes c2 ON c2.id_cliente = tp.id_jogador2
+            INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+            WHERE tr.id_torneio = :id_torneio
+              AND tr.numero_rodada = :rodada
+              AND tr.tipo_chave = 'WB'
+            ORDER BY tp.id_partida ASC";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([
+        'id_torneio' => $id_torneio,
+        'rodada'     => $rodada
+    ]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+public function listarPareamentoTorneioEliminacaoDuplaLB($id_torneio, $rodada)
+{
+    $sql = "SELECT tp.id_partida, c1.nome AS jogador1, c2.nome AS jogador2, tp.resultado
+            FROM torneio_partidas tp
+            INNER JOIN clientes c1 ON c1.id_cliente = tp.id_jogador1
+            LEFT JOIN clientes c2 ON c2.id_cliente = tp.id_jogador2
+            INNER JOIN torneio_rodadas tr ON tr.id_rodada = tp.id_rodada
+            WHERE tr.id_torneio = :id_torneio
+              AND tr.numero_rodada = :rodada
+              AND tr.tipo_chave = 'LB'
+            ORDER BY tp.id_partida ASC";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([
+        'id_torneio' => $id_torneio,
+        'rodada'     => $rodada
+    ]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+
+    /* =========================
+       EXCLUIR TORNEIO
+    ========================== */
+    public function excluir($idTorneio) {
+        try {
+            $this->db->beginTransaction();
+
+            $sql = "DELETE TP FROM torneio_partidas TP
+                    INNER JOIN torneio_rodadas TR ON TP.id_rodada = TR.id_rodada
+                    WHERE TR.id_torneio = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $idTorneio]);
+
+            $sql = "DELETE FROM torneio_rodadas WHERE id_torneio = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $idTorneio]);
+
+            $sql = "DELETE FROM torneio_participantes WHERE id_torneio = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $idTorneio]);
+
+            $sql = "DELETE FROM torneios WHERE id_torneio = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['id' => $idTorneio]);
+
+            $this->db->commit();
+            return true;
+        } catch (Exception) {
+            $this->db->rollBack();
+            return false;
+        }
+    }
+
+public function gerarProximaRodadaTorneioEliminacaoDupla($id_torneio, $id_rodada_atual)
+{
+    // 1. Pegar dados da rodada que acabou de ser finalizada
+    $stmt = $this->db->prepare("SELECT * FROM torneio_rodadas WHERE id_rodada = ?");
+    $stmt->execute([$id_rodada_atual]);
+    $rodadaAtual = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+    if (!$rodadaAtual) return;
+
+    $numeroRodada = $rodadaAtual['numero_rodada'];
+    $tipoChave = $rodadaAtual['tipo_chave']; // 'WB' ou 'LB'
+
+    // 2. Buscar todas as partidas dessa rodada com seus resultados
+    $stmt = $this->db->prepare("SELECT * FROM torneio_partidas WHERE id_rodada = ?");
+    $stmt->execute([$id_rodada_atual]);
+    $partidas = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+    $vencedores = [];
+    $perdedores = [];
+
+    foreach ($partidas as $p) {
+        $vencedorId = null;
+        $perdedorId = null;
+
+        // Lógica de quem venceu (considerando MD3 e Vitória Simples)
+        if (strpos($p['resultado'], 'jogador1') !== false) {
+            $vencedorId = $p['id_jogador1'];
+            $perdedorId = $p['id_jogador2'];
+        } elseif (strpos($p['resultado'], 'jogador2') !== false) {
+            $vencedorId = $p['id_jogador2'];
+            $perdedorId = $p['id_jogador1'];
+        }
+
+        if ($vencedorId) $vencedores[] = $vencedorId;
+        if ($perdedorId) $perdedores[] = $perdedorId;
+    }
+
+    // --- LÓGICA DE MOVIMENTAÇÃO ---
+
+    if ($tipoChave === 'WB') {
+        // 3. Gerar próxima rodada da Winner Bracket (se houver vencedores suficientes)
+        if (count($vencedores) > 1) {
+            $novaRodadaWB = $numeroRodada + 1;
+
+            // Cria a rodada no banco se não existir
+            $stmt = $this->db->prepare("INSERT IGNORE INTO torneio_rodadas (id_torneio, numero_rodada, status, tipo_chave) VALUES (?, ?, 'aberta', 'WB')");
+            $stmt->execute([$id_torneio, $novaRodadaWB]);
+            $idNovaRodadaWB = $this->db->lastInsertId() ?: $this->getRodadaId($id_torneio, $novaRodadaWB, 'WB');
+
+            // Pareia os vencedores entre si
+            for ($i = 0; $i < count($vencedores); $i += 2) {
+                $j1 = $vencedores[$i];
+                $j2 = $vencedores[$i + 1] ?? null;
+                $this->criarPartida($idNovaRodadaWB, $j1, $j2);
+            }
+        }
+
+        // 4. Mover perdedores para a Loser Bracket (LB)
+        if (count($perdedores) > 0) {
+            // Na eliminação dupla, os perdedores da WB R1 vão para a LB R1
+            $stmt = $this->db->prepare("INSERT IGNORE INTO torneio_rodadas (id_torneio, numero_rodada, status, tipo_chave) VALUES (?, ?, 'aberta', 'LB')");
+            $stmt->execute([$id_torneio, $numeroRodada]);
+            $idNovaRodadaLB = $this->db->lastInsertId() ?: $this->getRodadaId($id_torneio, $numeroRodada, 'LB');
+
+            for ($i = 0; $i < count($perdedores); $i += 2) {
+                $j1 = $perdedores[$i];
+                $j2 = $perdedores[$i + 1] ?? null;
+                $this->criarPartida($idNovaRodadaLB, $j1, $j2);
+            }
+        }
+    } else {
+        // 5. Se for LB, vencedores avançam na LB, perdedores saem do torneio
+        if (count($vencedores) > 1) {
+            $novaRodadaLB = $numeroRodada + 1;
+            $stmt = $this->db->prepare("INSERT IGNORE INTO torneio_rodadas (id_torneio, numero_rodada, status, tipo_chave) VALUES (?, ?, 'aberta', 'LB')");
+            $stmt->execute([$id_torneio, $novaRodadaLB]);
+            $idProxLB = $this->db->lastInsertId() ?: $this->getRodadaId($id_torneio, $novaRodadaLB, 'LB');
+
+            for ($i = 0; $i < count($vencedores); $i += 2) {
+                $this->criarPartida($idProxLB, $vencedores[$i], $vencedores[$i+1] ?? null);
+            }
+        }
+    }
+}
+
+// Funções auxiliares necessárias para o método acima:
+
+private function getRodadaId($id_torneio, $numero, $tipo) {
+    $stmt = $this->db->prepare("SELECT id_rodada FROM torneio_rodadas WHERE id_torneio = ? AND numero_rodada = ? AND tipo_chave = ?");
+    $stmt->execute([$id_torneio, $numero, $tipo]);
+    $res = $stmt->fetch();
+    return $res ? $res['id_rodada'] : null;
+}
+private function criarPartida($id_rodada, $j1, $j2) {
+    // Removi a coluna 'status' que estava causando o erro
+    $stmt = $this->db->prepare("INSERT INTO torneio_partidas (id_rodada, id_jogador1, id_jogador2) VALUES (?, ?, ?)");
+    $stmt->execute([$id_rodada, $j1, $j2]);
+}
+
+
+// Método auxiliar para calcular o número da próxima rodada
+private function proximaRodadaNumero($id_torneio, $tipo_chave) {
+    $sql = "SELECT MAX(numero_rodada) FROM torneio_rodadas
+            WHERE id_torneio = :id_torneio AND tipo_chave = :tipo_chave";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute(['id_torneio' => $id_torneio, 'tipo_chave' => $tipo_chave]);
+    $max = $stmt->fetchColumn();
+    return $max ? $max + 1 : 1;
+}
+
+public function listarPartidas($id_rodada)
+{
+    $sql = "SELECT p.*,
+                   j1.nome as nome_jogador1,
+                   j2.nome as nome_jogador2
+            FROM torneio_partidas p
+            LEFT JOIN clientes j1 ON p.id_jogador1 = j1.id_cliente
+            LEFT JOIN clientes j2 ON p.id_jogador2 = j2.id_cliente
+            WHERE p.id_rodada = ?";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_rodada]);
+    return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+}
+public function gerarClassificacaoFinal($id_torneio) {
+    $sql = "SELECT
+                tp.id_cliente,
+                c.nome, -- Verifique se esta linha existe!
+                (SELECT COUNT(*) FROM torneio_partidas p
+                 JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+                 WHERE r.id_torneio = ? AND (
+                    (p.id_jogador1 = tp.id_cliente AND p.resultado LIKE 'jogador1%') OR
+                    (p.id_jogador2 = tp.id_cliente AND p.resultado LIKE 'jogador2%')
+                 )) as vitorias,
+                (SELECT COUNT(*) FROM torneio_partidas p
+                 JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+                 WHERE r.id_torneio = ? AND (
+                    (p.id_jogador1 = tp.id_cliente AND p.resultado LIKE 'jogador2%') OR
+                    (p.id_jogador2 = tp.id_cliente AND p.resultado LIKE 'jogador1%')
+                 )) as derrotas
+            FROM torneio_participantes tp
+            JOIN clientes c ON tp.id_cliente = c.id_cliente -- JOIN ESSENCIAL
+            WHERE tp.id_torneio = ?
+            ORDER BY derrotas ASC, vitorias DESC";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_torneio, $id_torneio, $id_torneio]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+public function contarSobreviventes($id_torneio) {
+    // Conta quantos jogadores inscritos têm MENOS de 2 derrotas registradas
+    $sql = "SELECT COUNT(*) FROM torneio_participantes tp
+            WHERE tp.id_torneio = ?
+            AND (
+                SELECT COUNT(*)
+                FROM torneio_partidas p
+                JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+                WHERE r.id_torneio = ?
+                AND (
+                    (p.id_jogador1 = tp.id_cliente AND p.resultado LIKE 'jogador2%') OR
+                    (p.id_jogador2 = tp.id_cliente AND p.resultado LIKE 'jogador1%')
+                )
+            ) < 2";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_torneio, $id_torneio]);
+    return (int)$stmt->fetchColumn();
+}
+
+private function buscarSobreviventesPorDerrotas($id_torneio, $qtd_derrotas) {
+    $sql = "SELECT tp.id_cliente, c.nome
+            FROM torneio_participantes tp
+            JOIN clientes c ON tp.id_cliente = c.id_cliente
+            WHERE tp.id_torneio = ?
+            AND (
+                SELECT COUNT(*)
+                FROM torneio_partidas p
+                JOIN torneio_rodadas r ON p.id_rodada = r.id_rodada
+                WHERE r.id_torneio = ?
+                AND (
+                    (p.id_jogador1 = tp.id_cliente AND p.resultado LIKE 'jogador2%') OR
+                    (p.id_jogador2 = tp.id_cliente AND p.resultado LIKE 'jogador1%')
+                )
+            ) = ?";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_torneio, $id_torneio, $qtd_derrotas]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+
+}
+

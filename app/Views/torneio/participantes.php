@@ -28,6 +28,7 @@
     </div>
 
     <!-- Botões -->
+    <input type="hidden" name="id_torneio" value="<?= $torneio['id_torneio'] ?>">
     <button type="submit" class="btn btn-success">Confirmar Participantes</button>
     <a href="/torneio" class="btn btn-secondary">Cancelar</a>
 </form>

@@ -23,18 +23,19 @@
                 <?php foreach ($torneios as $torneio): ?>
                     <tr>
                         <td><?= htmlspecialchars($torneio['nome_torneio']) ?></td>
-                        <td><?= htmlspecialchars($torneio['cardgame']) ?></td>
-                        <td><?= htmlspecialchars($torneio['tipo_legivel']) ?></td>
+                        <td><?= htmlspecialchars($torneio['cardgame'] ?? 'N/A') ?></td>
+                        <td><?= htmlspecialchars($torneio['tipo_legivel'] ?? $torneio['tipo_torneio'] ?? 'Não definido') ?></td>
                         <td><?= date('d/m/Y H:i', strtotime($torneio['data_criacao'])) ?></td>
                         <td><?= ucfirst($torneio['status']) ?></td>
                         <td>
                             <a href="/torneio/participantes/<?= $torneio['id_torneio'] ?>" class="btn btn-sm btn-success">Participantes</a>
                             <a href="/torneio/gerenciar/<?= $torneio['id_torneio'] ?>" class="btn btn-sm btn-info">Gerenciar</a>
-                            <button class="btn btn-sm btn-primary" onclick="window.open('/torneio/verResultadoSuico/<?= $torneio['id_torneio'] ?>','_blank')">🏆 Resultado</button>
+                            <button class="btn btn-sm btn-primary"  onclick="window.open('/torneiosuico/verPontuacao/<?= $torneio['id_torneio'] ?>','_blank')">🏆 Resultado</button>
                             <a href="/torneio/excluir/<?= $torneio['id_torneio'] ?>"
-                                class="btn btn-danger btn-sm"
-                                onclick="return confirm('Tem certeza que deseja excluir este torneio?')">
-                                Excluir
+                                class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('ATENÇÃO: Isso apagará permanentemente o torneio, todos os jogadores, rodadas e resultados. Confirma?')"
+                                title="Excluir Torneio">
+                                <i class="fas fa-trash-alt">Excluir</i>
                             </a>
                         </td>
                     </tr>
