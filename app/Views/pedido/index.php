@@ -21,29 +21,32 @@
 <div class="bg-dark py-3 px-2 w-100">
   <div class="container-fluid">
     <strong class="text-light">Filtrar por Cardgames:</strong>
-    <div class="d-flex flex-wrap gap-2 mt-2">
-      <?php foreach ($cardgames as $cardgame): ?>
-        <?php $checked = in_array($cardgame['id_cardgame'], ($_GET['cardgames'] ?? [])) ? 'checked' : ''; ?>
 
-        <div class="card border-0 bg-transparent text-light" style="width: 100px; height: 80px; position: relative;">
-          <img src="/public/images/cartas_fundo/<?= htmlspecialchars($cardgame['imagem_fundo_card']) ?>"
-               alt="<?= htmlspecialchars($cardgame['nome']) ?>"
-               class="card-img"
-               style="width: 100%; height: 100%; object-fit: cover;">
-          <div class="card-img-overlay d-flex flex-column justify-content-center align-items-center p-0">
-            <input class="form-check-input mb-1"
-                   type="checkbox"
-                   name="cardgames[]"
-                   value="<?= $cardgame['id_cardgame'] ?>"
-                   <?= $checked ?>
-                   onchange="filtrarClientes()">
-            <small class="fw-bold"><?= htmlspecialchars($cardgame['nome']) ?></small>
+    <div class="cards-grid mt-3">
+      <?php foreach ($cardgames as $cardgame): ?>
+        <?php $checked = in_array((string)$cardgame['id_cardgame'], array_map('strval', ($_GET['cardgames'] ?? []))) ? 'checked' : ''; ?>
+        <label class="magic-card">
+
+          <input class="magic-check"
+                 type="checkbox"
+                 name="cardgames[]"
+                 value="<?= $cardgame['id_cardgame'] ?>"
+                 <?= $checked ?>
+                 onchange="filtrarClientes()">
+
+          <img src="/storage/uploads/cardgames/<?= $cardgame['id_cardgame'] ?>/<?= htmlspecialchars($cardgame['imagem_fundo_card']) ?>"
+               alt="<?= htmlspecialchars($cardgame['nome']) ?>">
+
+          <div class="card-overlay">
+            <small><?= htmlspecialchars($cardgame['nome']) ?></small>
           </div>
-        </div>
+
+        </label>
       <?php endforeach; ?>
     </div>
   </div>
 </div>
+
 
 <br>
 
@@ -54,7 +57,8 @@
 
 <form id="formPedidos" method="POST" action="/pedido/salvar">
   <input type="hidden" name="dataSelecionada" id="dataSelecionadaHidden" value="<?= $dataSelecionada ?>">
-  <div id="cardgamesSelecionados"></div>
+    <!-- container para os hidden inputs de cardgames -->
+    <div id="cardgamesSelecionados"></div>
 
   <!-- Tabela de pedidos -->
   <div class="table-responsive">
@@ -129,43 +133,57 @@
                   <button type="button" onclick="abrirPopupVariado(<?= $cliente['id_cliente'] ?>)">📝</button>
               </div>
             </td>
-            <td id="total_<?= $cliente['id_cliente'] ?>"
-                class="<?php
-                    $temValor = false;
-                    $valorVariado = (float)($pedidoCliente['valor_variado'] ?? 0);
+				<td id="total_<?= $cliente['id_cliente'] ?>"
+					class="<?php
+						$temValor = false;
+						$valorVariado = (float)($pedidoCliente['valor_variado'] ?? 0);
 
-                    // Verifica se tem itens ou valor variado
-                    if ($valorVariado > 0) {
-                        $temValor = true;
-                    } elseif (!empty($pedidoCliente['itens'])) {
-                        foreach ($pedidoCliente['itens'] as $item) {
-                            if ($item['quantidade'] > 0) {
-                                $temValor = true;
-                                break;
-                            }
-                        }
-                    }
+						// Verifica se tem itens ou valor variado
+						if ($valorVariado > 0) {
+							$temValor = true;
+						} elseif (!empty($pedidoCliente['itens'])) {
+							foreach ($pedidoCliente['itens'] as $item) {
+								if ($item['quantidade'] > 0) {
+									$temValor = true;
+									break;
+								}
+							}
+						}
 
-                    // Define a classe visual do Bootstrap
-                    if ($temValor && ($pedidoCliente['pedido_pago'] ?? 0) == 0) {
-                        echo 'table-danger text-center fw-bold'; // vermelho: tem valor mas não pago
-                    } elseif (($pedidoCliente['pedido_pago'] ?? 0) == 1) {
-                        echo 'table-success text-center fw-bold'; // verde: pago
-                    } else {
-                        echo 'table-dark text-center'; // padrão escuro
-                    }
-                ?>">
-                <?= $pedidoCliente
-                    ? 'R$ '.number_format($pedidoCliente['valor_variado'],2,',','.')
-                    : 'R$ 0,00' ?>
-                </td>
-
-            <td>
-              <input type="checkbox"
-                     name="pago[<?= $cliente['id_cliente'] ?>]"
-                     onchange="abrirModalPagamento(<?= $pedidoCliente['id_pedido'] ?? 0 ?>, <?= $cliente['id_cliente'] ?>)"
-                     <?= ($pedidoCliente && $pedidoCliente['pedido_pago'] == 1) ? 'checked' : '' ?>>
-            </td>
+						// Define a classe visual do Bootstrap
+						if ($temValor && ($pedidoCliente['pedido_pago'] ?? 0) == 0) {
+							echo 'table-danger text-center fw-bold'; // vermelho: tem valor mas não pago
+						} elseif (($pedidoCliente['pedido_pago'] ?? 0) == 1) {
+							echo 'table-success text-center fw-bold'; // verde: pago
+						} else {
+							echo 'table-dark text-center'; // padrão escuro
+						}
+					?>"
+					data-total="<?php
+						// Calcula o total do pedido (itens + variado)
+						$valorItens = 0;
+						if (!empty($pedidoCliente['itens'])) {
+							foreach ($pedidoCliente['itens'] as $item) {
+								$valorItens += $item['quantidade'] * ($item['valor_unitario'] ?? 0);
+							}
+						}
+						$valorTotal = $valorItens + $valorVariado;
+						echo $valorTotal;
+					?>">
+					<?= $pedidoCliente
+						? 'R$ '.number_format($valorTotal, 2, ',', '.')
+						: 'R$ 0,00' ?>
+				</td>
+                <td>
+				<input type="checkbox" name="pago[<?= $cliente['id_cliente'] ?>]"
+					   onchange="abrirModalPagamento(
+						   <?= $pedidoCliente['id_pedido'] ?? 0 ?>,
+						   <?= $cliente['id_cliente'] ?>,
+						   document.getElementById('total_<?= $cliente['id_cliente'] ?>').dataset.total,
+						   this
+					   )"
+					   <?= ($pedidoCliente && $pedidoCliente['pedido_pago'] == 1) ? 'checked' : '' ?>>
+                    </td>
             <td class="text-center">
               <?php if ($pedidoCliente && $pedidoCliente['pedido_pago'] == 1): ?>
                 <a href="#"
@@ -202,9 +220,13 @@
   </div>
 </div>
 
+<div id="alertVariado" class="custom-alert" style="display:none;">
+  <p>⚠️ Não esqueça de colocar a Observação do Valor Variado!</p>
+</div>
+
 <!-- Modal Método de Pagamento -->
 <div class="modal fade" id="modalPagamento" tabindex="-1" aria-labelledby="modalPagamentoLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content bg-dark text-light">
       <div class="modal-header">
         <h5 class="modal-title" id="modalPagamentoLabel">Método de Pagamento</h5>
@@ -212,19 +234,49 @@
       </div>
       <div class="modal-body">
         <form id="formPagamento" method="POST" action="/pedido/salvarPagamento">
-          <input type="hidden" id="modal_id_pedido" name="id_pedido[]" value="">
+          <input type="hidden" id="modal_id_pedido" name="id_pedido" value="">
           <input type="hidden" id="modal_id_cliente" name="id_cliente" value="">
           <input type="hidden" name="dataSelecionada" value="<?= $dataSelecionada ?>">
 
-          <!-- Tipos de pagamento -->
-          <div class="d-flex flex-wrap gap-2">
-            <?php foreach ($tipos_pagamento as $tp): ?>
-              <label class="form-check-label">
-                <input type="checkbox" class="form-check-input me-1" name="pagamentos[]" value="<?= $tp['id_pagamento'] ?>">
-                <?= htmlspecialchars($tp['nome']) ?>
-              </label>
-            <?php endforeach; ?>
+          <!-- Label com total do pedido -->
+          <div class="mb-3">
+            <label class="fw-bold">Total do Pedido: R$ <span id="totalPedido"></span></label><br>
+            <label class="fw-bold">Valor restante a distribuir: R$ <span id="valorRestante"></span></label>
           </div>
+
+          <!-- Tabela 2x2 de tipos de pagamento -->
+          <table class="table table-dark table-bordered align-middle">
+            <thead>
+              <tr>
+                <th>Tipo de Pagamento</th>
+                <th>Valor</th>
+                <th>Selecionar</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($tipos_pagamento as $tp): ?>
+              <tr>
+                <td><?= htmlspecialchars($tp['nome']) ?></td>
+                <td>
+                  <input type="number" step="0.01" min="0"
+                         class="form-control pagamento-valor"
+                         name="valor[<?= $tp['id_pagamento'] ?>]"
+                         data-id="<?= $tp['id_pagamento'] ?>"
+                         value="0.00">
+                </td>
+                <td>
+                  <input type="checkbox" class="form-check-input pagamento-check"
+                         data-id="<?= $tp['id_pagamento'] ?>">
+                </td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-info distribuir-btn"
+                          data-id="<?= $tp['id_pagamento'] ?>">Distribuir restante</button>
+                </td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
         </form>
       </div>
       <div class="modal-footer">
@@ -234,6 +286,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- Modal Recibo -->
 <div class="modal fade" id="modalRecibo" tabindex="-1" aria-labelledby="modalReciboLabel" aria-hidden="true">

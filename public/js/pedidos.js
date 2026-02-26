@@ -19,8 +19,6 @@ function initCalendario(datasPendentes, dataSelecionada) {
     });
 }
 
-
-
 // Pesquisa dinâmica de clientes
 function initPesquisaCliente() {
     document.getElementById('pesquisaCliente').addEventListener('keyup', function() {
@@ -102,22 +100,19 @@ function calcularTotal(clienteId) {
     // Somar variado
     const variadoInput = document.querySelector(`input[name="variado[${clienteId}]"]`);
     if (variadoInput) {
-        let valor = variadoInput.value;
-        // Remove separador de milhar e troca vírgula por ponto
-        valor = valor.replace(/\./g, '').replace(',', '.');
-        let variado = parseFloat(valor) || 0;
-        total += variado;
+        let valor = variadoInput.value.replace(/\./g, '').replace(',', '.');
+        total += parseFloat(valor) || 0;
     }
 
-    // Atualizar label
+    // Atualizar label e data-total
     const totalLabel = document.getElementById(`total_${clienteId}`);
     if (totalLabel) {
         totalLabel.textContent = "R$ " + total.toFixed(2).replace('.', ',');
+        totalLabel.dataset.total = total.toFixed(2); // <-- Atualiza o data-total
     }
 
     calcularTotalRecebido();
 }
-
 
 // LABEL do PEDIDO que mostra o total recebido no DIA.
 function calcularTotalRecebido() {
@@ -141,7 +136,6 @@ function calcularTotalRecebido() {
         totalRecebido.textContent = "R$ " + totalDia.toFixed(2).replace('.', ',');
     }
 }
-
 
 // Atualiza hidden de cardgames
 function atualizarHiddenCardgames() {
@@ -187,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 calcularTotal(clienteId);
             }
         });
+        filtrarClientes();
     });
 
     // Filtro por cardgames
@@ -198,7 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Atualiza hidden dos cardgames ao salvar pedidos
-    document.getElementById('formPedidos').addEventListener('submit', atualizarHiddenCardgames);
+    const formPedidosEl = document.getElementById('formPedidos');
+        if (formPedidosEl) {
+            formPedidosEl.addEventListener('submit', atualizarHiddenCardgames);
+        }
 
     // Atualiza total recebido quando checkbox de pago muda
     document.querySelectorAll('input[name^="pago"]').forEach(checkbox => {
@@ -232,14 +230,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // Atualiza o hidden sempre que o calendário muda
-document.getElementById('dataPedido').addEventListener('change', function() {
-    document.getElementById('dataSelecionadaHidden').value = this.value;
-});
+const dataPedidoEl = document.getElementById('dataPedido');
+if (dataPedidoEl) {
+  dataPedidoEl.addEventListener('change', function() { document.getElementById('dataSelecionadaHidden').value = this.value;
+ });
+}
 
 // Inicializa o hidden com o valor atual do calendário
-document.getElementById('dataSelecionadaHidden').value = document.getElementById('dataPedido').value;
+const dataHidden = document.getElementById('dataSelecionadaHidden');
+const dataPedido = document.getElementById('dataPedido');
 
-function abrirModalPagamento(idPedido, idCliente) {
+if (dataHidden && dataPedido) {
+    dataHidden.value = dataPedido.value;
+}
+
+
+
+// Model Pagamennto - Calculo de valores.
+let totalPedido = 0;
+window.abrirModalPagamento = function(idPedido, idCliente, valorTotal, checkboxEl) {
+    const total = parseFloat(valorTotal) || 0;
+
+    if (total <= 0) {
+        alert("Este pedido não possui valor para rateio de pagamento.");
+        if (checkboxEl) checkboxEl.checked = false; // desmarca se não houver valor
+        return;
+    }
+
+    totalPedido = total;
+    document.getElementById('totalPedido').textContent = totalPedido.toFixed(2);
+    document.getElementById('valorRestante').textContent = totalPedido.toFixed(2);
+
     // IDs
     document.getElementById('modal_id_pedido').value = idPedido;
     document.getElementById('modal_id_cliente').value = idCliente;
@@ -278,12 +299,161 @@ function abrirModalPagamento(idPedido, idCliente) {
         form.appendChild(clone);
     });
 
+    // --- NOVAS FUNCIONALIDADES DE RATEIO ---
+    totalPedido = parseFloat(valorTotal);
+    document.getElementById('totalPedido').textContent = totalPedido.toFixed(2);
+    document.getElementById('valorRestante').textContent = totalPedido.toFixed(2);
+
+    // Resetar valores e checkboxes
+    document.querySelectorAll('.pagamento-valor').forEach(el => el.value = "0.00");
+    document.querySelectorAll('.pagamento-check').forEach(el => el.checked = false);
+
+    // Colocar valor total no campo de Crédito e marcar o checkbox
+    const campoCredito = document.querySelector('.pagamento-valor[data-id="credito"]');
+    const checkCredito = document.querySelector('.pagamento-check[data-id="credito"]');
+    if (campoCredito) campoCredito.value = totalPedido.toFixed(2);
+    if (checkCredito) checkCredito.checked = true;
+
     // Abre modal Bootstrap
     const modal = new bootstrap.Modal(document.getElementById('modalPagamento'));
     modal.show();
 }
 
-function salvarPagamento() {
-    document.getElementById('formPagamento').submit();
+
+// Atualiza restante sempre que valores mudam
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('pagamento-valor')) {
+        atualizarRestante();
+    }
+});
+
+function atualizarRestante() {
+    let soma = 0;
+    document.querySelectorAll('.pagamento-valor').forEach(el => {
+        soma += parseFloat(el.value) || 0;
+    });
+    let restante = totalPedido - soma;
+    document.getElementById('valorRestante').textContent = restante.toFixed(2);
 }
+
+// Checkbox divide automaticamente e redistribui ao desmarcar
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('pagamento-check')) {
+        const selecionados = Array.from(document.querySelectorAll('.pagamento-check:checked'));
+        const desmarcado = !e.target.checked;
+
+        if (desmarcado) {
+            // Zera o campo do pagamento desmarcado
+            const campo = document.querySelector(`.pagamento-valor[data-id="${e.target.dataset.id}"]`);
+            if (campo) campo.value = "0.00";
+        }
+
+        if (selecionados.length > 0) {
+            // Divide o total entre os selecionados
+            let valorDividido = totalPedido / selecionados.length;
+
+            // Arredondar para 2 casas decimais
+            valorDividido = Math.round(valorDividido * 100) / 100;
+
+            // Distribuir valores
+            let soma = 0;
+            selecionados.forEach((chk, index) => {
+                const campo = document.querySelector(`.pagamento-valor[data-id="${chk.dataset.id}"]`);
+                if (campo) {
+                    // Último campo recebe o ajuste para fechar o total
+                    if (index === selecionados.length - 1) {
+                        campo.value = (totalPedido - soma).toFixed(2);
+                    } else {
+                        campo.value = valorDividido.toFixed(2);
+                        soma += valorDividido;
+                    }
+                }
+            });
+        }
+
+        atualizarRestante();
+    }
+});
+
+// Botão "Distribuir restante"
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('distribuir-btn')) {
+        const restante = parseFloat(document.getElementById('valorRestante').textContent);
+        const campo = document.querySelector(`.pagamento-valor[data-id="${e.target.dataset.id}"]`);
+        if (campo) {
+            campo.value = (parseFloat(campo.value) + restante).toFixed(2);
+            atualizarRestante();
+        }
+    }
+});
+
+//Alerta para o MODAL VARIADO
+function mostrarAlertaVariado(callback) {
+    const alertBox = document.getElementById('alertVariado');
+    alertBox.style.display = 'block';
+
+    // Esconde automaticamente depois de alguns segundos
+    setTimeout(() => {
+        alertBox.style.display = 'none';
+        if (typeof callback === 'function') {
+            callback(); // abre o modal depois que o alerta some
+        }
+    }, 3000); // tempo visível
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('input[name^="variado"]').forEach(input => {
+        input.addEventListener('blur', function() {
+            let valor = this.value.replace(/\./g, '').replace(',', '.');
+            let num = parseFloat(valor) || 0;
+
+            if (num > 0) {
+                mostrarAlertaVariado(() => {
+                    abrirPopupVariado(this.dataset.cliente);
+                });
+            }
+        });
+    });
+});
+
+function salvarPagamento() {
+    const form = document.getElementById('formPagamento');
+
+    // Remove campos antigos de pagamento
+    form.querySelectorAll('input[name^="pagamento"]').forEach(el => el.remove());
+
+    // Copia os valores dos métodos de pagamento
+    document.querySelectorAll('.pagamento-valor').forEach(input => {
+        const idPagamento = input.dataset.id;
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = `pagamento[${idPagamento}]`;
+        hidden.value = input.value;
+        form.appendChild(hidden);
+    });
+
+    // 🔹 Copia também os cardgames selecionados para o form do modal
+    form.querySelectorAll('input[name="cardgamesSelecionados[]"]').forEach(el => el.remove()); // limpa antigos
+    document.querySelectorAll('input[name="cardgames[]"]:checked').forEach(cb => {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'cardgamesSelecionados[]';
+        hidden.value = cb.value;
+        form.appendChild(hidden);
+    });
+
+    form.submit();
+}
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const modalPagamento = document.getElementById('modalPagamento');
+    if (modalPagamento) {
+        modalPagamento.addEventListener('hidden.bs.modal', () => {
+            filtrarClientes();
+        });
+    }
+});
+
 

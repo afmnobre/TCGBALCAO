@@ -272,7 +272,6 @@ public function excluir($id_pedido)
 
     }
 
-
     /**
      * Lista todos os cardgames cadastrados
      */
@@ -311,18 +310,24 @@ public function excluir($id_pedido)
     }
 
 public function salvarTiposPagamento($idPedido, $pagamentos) {
-    $sqlDelete = "DELETE FROM pedido_pagamento WHERE id_pedido = :id_pedido";
-    $stmtDelete = $this->db->prepare($sqlDelete);
-    $stmtDelete->bindValue(':id_pedido', $idPedido, PDO::PARAM_INT);
-    $stmtDelete->execute();
+    // Apaga pagamentos antigos
+    $stmtDelete = $this->db->prepare("DELETE FROM pedido_pagamento WHERE id_pedido = :id_pedido");
+    $stmtDelete->execute(['id_pedido' => $idPedido]);
 
-    $sqlInsert = "INSERT INTO pedido_pagamento (id_pedido, id_pagamento) VALUES (:id_pedido, :id_pagamento)";
+    // Insere novos com valor
+    $sqlInsert = "INSERT INTO pedido_pagamento (id_pedido, id_pagamento, valor)
+                  VALUES (:id_pedido, :id_pagamento, :valor)";
     $stmtInsert = $this->db->prepare($sqlInsert);
 
-    foreach ($pagamentos as $idPagamento) {
-        $stmtInsert->bindValue(':id_pedido', $idPedido, PDO::PARAM_INT);
-        $stmtInsert->bindValue(':id_pagamento', $idPagamento, PDO::PARAM_INT);
-        $stmtInsert->execute();
+    foreach ($pagamentos as $idPagamento => $valor) {
+        $valor = floatval(str_replace(',', '.', $valor));
+        if ($valor > 0) {
+            $stmtInsert->execute([
+                'id_pedido'   => $idPedido,
+                'id_pagamento'=> $idPagamento,
+                'valor'       => $valor
+            ]);
+        }
     }
 }
 

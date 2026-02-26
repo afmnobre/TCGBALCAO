@@ -7,7 +7,7 @@
 
 /* Destaque para cabeçalho de produto em alerta de estoque */
 .estoque-alerta {
-    background-color: #ffeb99; /* amarelo claro */
+    background-color: #ff0000; /* amarelo claro */
     font-weight: bold;
     border: 2px solid #ff9900; /* borda laranja */
 }
@@ -29,6 +29,132 @@
   margin-top: 80px;
   margin-left: 40px;
   margin-right: 40px;
+}
+
+.custom-alert {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: black;
+  color: white;
+  border: 6px solid red;
+  padding: 20px 30px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  z-index: 9999;
+  animation: blinkBorder 1s infinite;
+}
+
+@keyframes blinkBorder {
+  0% { border-color: red; }
+  50% { border-color: transparent; }
+  100% { border-color: red; }
+}
+
+
+/* GRID RESPONSIVO */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 57px);
+  gap: 14px;
+  justify-content: flex-start;
+}
+
+/* CARTA BASE */
+.magic-card {
+  position: relative;
+  width: 57px;
+  height: 80px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 8px;
+  overflow: hidden;
+
+  /* sombra estilo carta real */
+  box-shadow:
+    0 4px 8px rgba(0,0,0,0.6),
+    0 0 0 2px rgba(255,255,255,0.08) inset;
+}
+
+/* IMAGEM */
+.magic-card {
+  position: relative;
+  width: 57px;
+  height: 80px;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  display: block;
+
+  box-shadow: 0 6px 14px rgba(0,0,0,0.7);
+}
+
+/* IMAGEM REALMENTE 100% */
+.magic-card img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* MOLDURA PRETA ESTILO CARTA */
+.magic-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 3px #000,          /* borda preta */
+    inset 0 0 0 4px rgba(255,255,255,0.05); /* filete interno */
+  pointer-events: none;
+}
+
+
+/* OVERLAY */
+.card-overlay {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: rgba(0,0,0,0.65);
+  text-align: center;
+  padding: 2px;
+  font-size: 10px;
+  color: #fff;
+}
+
+/* ESCONDE CHECKBOX */
+.magic-check {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+
+/* HOVER ESTILO CARTA FÍSICA */
+.magic-card:hover {
+  transform: scale(1.08) rotateZ(-1deg);
+  box-shadow:
+    0 8px 18px rgba(0,0,0,0.8),
+    0 0 0 2px rgba(255,255,255,0.15) inset;
+  z-index: 10;
+}
+
+/* DESTACAR QUANDO MARCADO */
+.magic-check:checked + img {
+  outline: 3px solid #ffc107;
+  outline-offset: -3px;
+}
+
+.magic-check:checked ~ .card-overlay {
+  background: rgba(255,193,7,0.85);
+  color: #000;
+  font-weight: bold;
 }
 
 

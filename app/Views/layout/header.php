@@ -7,12 +7,26 @@ $logoFile    = $loja['logo'] ?? 'logo.png';
 $faviconFile = $loja['favicon'] ?? 'favicon.ico';
 $corTema     = $loja['cor_tema'] ?? '#000'; // cor em hexadecimal
 
-$logoPath    = "/storage/uploads/{$idLoja}/{$logoFile}";
-$faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
+$logoPath    = "/storage/uploads/lojas/{$idLoja}/{$logoFile}";
+$faviconPath = "/storage/uploads/lojas/{$idLoja}/{$faviconFile}";
+?>
+<!DOCTYPE html>
+<?php
+$loja = $_SESSION['LOJA'] ?? [];
+
+$idLoja      = $loja['id_loja'] ?? 0;
+$nomeLoja    = $loja['nome_loja'] ?? 'Sistema TCGBalcão';
+$logoFile    = $loja['logo'] ?? 'logo.png';
+$faviconFile = $loja['favicon'] ?? 'favicon.ico';
+$corTema     = $loja['cor_tema'] ?? '#000'; // cor em hexadecimal
+
+$logoPath    = "/storage/uploads/lojas/{$idLoja}/{$logoFile}";
+$faviconPath = "/storage/uploads/lojas/{$idLoja}/{$faviconFile}";
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+
   <meta charset="UTF-8">
   <title><?= htmlspecialchars($nomeLoja) ?></title>
   <link rel="icon" href="<?= htmlspecialchars($faviconPath) ?>" type="image/x-icon">
@@ -26,6 +40,8 @@ $faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
   <!-- Seus CSS locais -->
   <link rel="stylesheet" href="/public/css/style.css">
   <link rel="stylesheet" href="/public/css/pedido.css">
+  <link rel="stylesheet" href="/public/css/torneioEliminacao.css">
+
 </head>
 
 <body class="bg-dark text-light">
@@ -56,6 +72,5 @@ $faviconPath = "/storage/uploads/{$idLoja}/{$faviconFile}";
 </nav>
 
 <div class="main-content">
-
 
 

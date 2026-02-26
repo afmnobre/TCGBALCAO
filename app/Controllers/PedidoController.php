@@ -195,12 +195,18 @@ class PedidoController extends Controller
             }
         }
 
-        $queryParams = ['data' => $dataSelecionada];
-        if (!empty($dados['cardgamesSelecionados'])) {
-            $queryParams['cardgames'] = $dados['cardgamesSelecionados'];
-        }
 
-        header("Location: /pedido/index?" . http_build_query($queryParams));
+
+$queryParams = ['data' => $dataSelecionada];
+
+if (!empty($dados['cardgamesSelecionados'])) {
+    // usa o mesmo nome "cardgames" que a view espera
+    $queryParams['cardgames'] = $dados['cardgamesSelecionados'];
+}
+
+header("Location: /pedido/index?" . http_build_query($queryParams, '', '&'));
+exit;
+
     }
 
 public function salvarPagamento() {
@@ -209,9 +215,11 @@ public function salvarPagamento() {
     $pedidoModel = new Pedido();
     $dados = $_POST;
 
-    $idCliente = (int)($dados['id_cliente'] ?? array_key_first($dados['id_pedido']));
-    $idPedido  = $dados['id_pedido'][$idCliente] ?? null;
-    $pagamentosSelecionados = $dados['pagamentos'] ?? [];
+    $idCliente = (int)($dados['id_cliente'] ?? 0);
+    $idPedido  = $dados['id_pedido'] ?? null;
+
+    // 🔑 Correção: pegar os valores rateados do modal
+    $pagamentosSelecionados = $dados['valor'] ?? [];
 
     // Normaliza valor variado
     $variado = $dados['variado'][$idCliente] ?? 0;
@@ -225,41 +233,57 @@ public function salvarPagamento() {
     // Observação
     $observacaoVariado = trim($dados['observacao_variado'][$idCliente] ?? '');
 
-if ($idPedido) {
-    $pedidoModel->atualizar($idPedido, [
-        'valor_variado'      => $variado,
-        'observacao_variado' => $observacaoVariado,
-        'pedido_pago'        => 1
-    ]);
-
-    if (!empty($dados['itens'][$idCliente])) {
-        $pedidoModel->atualizarItens($idPedido, $dados['itens'][$idCliente]);
-    }
-
-    if (!empty($pagamentosSelecionados)) {
-        $pedidoModel->salvarTiposPagamento($idPedido, $pagamentosSelecionados);
-    }
-}
-else {
-        // 🔹 Cria novo pedido já como pago
-        $novoId = $pedidoModel->salvar([
-            'id_cliente'        => $idCliente,
-            'id_loja'           => $_SESSION['LOJA']['id_loja'],
-            'valor_variado'     => $variado,
-            'observacao_variado'=> $observacaoVariado,
-            'pedido_pago'       => 1,
-            'itens'             => $dados['itens'][$idCliente] ?? [],
-            'data_pedido'       => $dados['dataSelecionada'] ?? date('Y-m-d')
+    if ($idPedido) {
+        // Atualiza pedido existente
+        $pedidoModel->atualizar($idPedido, [
+            'valor_variado'      => $variado,
+            'observacao_variado' => $observacaoVariado,
+            'pedido_pago'        => 1
         ]);
 
-        // 🔹 Grava métodos de pagamento
+        if (!empty($dados['itens'][$idCliente])) {
+            $pedidoModel->atualizarItens($idPedido, $dados['itens'][$idCliente]);
+        }
+
+        if (!empty($pagamentosSelecionados)) {
+            $pedidoModel->salvarTiposPagamento($idPedido, $pagamentosSelecionados);
+        }
+    } else {
+        // 🔹 Cria novo pedido já como pago
+        $novoId = $pedidoModel->salvar([
+            'id_cliente'         => $idCliente,
+            'id_loja'            => $_SESSION['LOJA']['id_loja'],
+            'valor_variado'      => $variado,
+            'observacao_variado' => $observacaoVariado,
+            'pedido_pago'        => 1,
+            'data_pedido'        => $dados['dataSelecionada'] ?? date('Y-m-d')
+        ]);
+
+        // 🔹 Grava itens vinculados ao novo pedido
+        if (!empty($dados['itens'][$idCliente])) {
+            $pedidoModel->atualizarItens($novoId, $dados['itens'][$idCliente]);
+        }
+
+        // 🔹 Grava métodos de pagamento com valor
         if (!empty($pagamentosSelecionados)) {
             $pedidoModel->salvarTiposPagamento($novoId, $pagamentosSelecionados);
         }
     }
 
-    // Redireciona de volta para a tela de pedidos
-    header("Location: /pedido/index?data=" . ($dados['dataSelecionada'] ?? date('Y-m-d')));
+    // Redireciona de volta para a tela de pedidos mantendo filtros
+    $queryParams = ['data' => $dados['dataSelecionada'] ?? date('Y-m-d')];
+
+    if (!empty($dados['cardgamesSelecionados'])) {
+        foreach ($dados['cardgamesSelecionados'] as $cg) {
+            $queryParams['cardgames'][] = $cg;
+        }
+    }
+
+    header("Location: /pedido/index?" . http_build_query($queryParams, '', '&'));
+    exit;
 }
+
+
+
 
 }

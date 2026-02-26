@@ -12,7 +12,6 @@ class RelatorioController extends Controller
         AuthMiddleware::verificarLogin();
 
         $relatorioModel = new Relatorio();
-        $clienteModel   = new Cliente();
         $produtoModel   = new Produto();
 
         $idLoja   = $_SESSION['LOJA']['id_loja'];
@@ -73,6 +72,42 @@ class RelatorioController extends Controller
             'anoAtual'        => $anoAtual
         ]);
     }
+
+	public function dados()
+	{
+		header('Content-Type: application/json');
+
+		$ano = $_GET['ano'] ?? date('Y');
+		$idLoja = $_SESSION['LOJA']['id_loja'];
+
+		$relatorioModel = new Relatorio();
+
+		$metricas     = $relatorioModel->getMetricas($idLoja, $ano);
+		$comparativo  = $relatorioModel->getComparativo($idLoja, $ano);
+		$topClientes  = $relatorioModel->getTopClientes($idLoja, $ano);
+		$topProdutos  = $relatorioModel->getTopProdutos($idLoja, $ano);
+		$pagamentos   = $relatorioModel->getPagamentos($idLoja, $ano);
+		$desempenho   = $relatorioModel->getDesempenhoAnual($idLoja, $ano);
+
+		echo json_encode([
+			"metricas"    => $metricas,
+			"comparativo" => $comparativo,
+			"topClientes" => $topClientes,
+			"topProdutos" => $topProdutos,
+			"pagamentos"  => $pagamentos,
+			"desempenho"  => $desempenho
+		]);
+
+		exit;
+	}
+
+
+
+
+
+
+
+
 }
 
 

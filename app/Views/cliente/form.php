@@ -31,29 +31,33 @@
 
 <!-- CardGames -->
 <h3 class="text-light">CardGames que o cliente joga:</h3>
-<div class="d-flex flex-wrap gap-3 mb-3">
+<div class="cards-grid mt-3">
   <?php if (!empty($cardgames)): ?>
     <?php foreach ($cardgames as $cg): ?>
       <?php $checked = (!empty($cardgamesCliente) && in_array($cg['id_cardgame'], array_column($cardgamesCliente, 'id_cardgame'))) ? 'checked' : ''; ?>
 
-      <div class="card border-0 bg-transparent text-light" style="width: 105px; aspect-ratio: 63/88; position: relative;">
-        <!-- Imagem -->
-        <img src="/public/images/cartas_fundo/<?= htmlspecialchars($cg['imagem_fundo_card']) ?>"
-             alt="<?= htmlspecialchars($cg['nome']) ?>"
-             class="card-img" style="width: 100%; height: 100%; object-fit: cover;">
+      <label class="magic-card">
+        <input class="magic-check"
+               type="checkbox"
+               name="cardgames[]"
+               value="<?= $cg['id_cardgame'] ?>"
+               <?= $checked ?>>
 
-        <!-- Overlay com checkbox e nome -->
-        <div class="card-img-overlay d-flex flex-column justify-content-center align-items-center p-0">
-          <input class="form-check-input mb-1" type="checkbox" name="cardgames[]" value="<?= $cg['id_cardgame'] ?>" <?= $checked ?>>
-          <small class="fw-bold"><?= htmlspecialchars($cg['nome']) ?></small>
+        <img src="/storage/uploads/cardgames/<?= htmlspecialchars($cg['id_cardgame']) ?>/<?= htmlspecialchars($cg['imagem_fundo_card']) ?>"
+             alt="<?= htmlspecialchars($cg['nome']) ?>">
+
+        <div class="card-overlay">
+          <small><?= htmlspecialchars($cg['nome']) ?></small>
         </div>
-      </div>
+      </label>
 
     <?php endforeach; ?>
   <?php else: ?>
     <p class="text-muted">Nenhum cardgame cadastrado.</p>
   <?php endif; ?>
 </div>
+
+<br><br>
 
 
 

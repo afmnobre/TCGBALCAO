@@ -35,7 +35,7 @@
                   <?php foreach ($cliente['cardgames'] as $game): ?>
                     <div class="cliente-cardgame-thumb text-center"
                          title="<?= htmlspecialchars($game['nome']) ?>"
-                         style="background-image: url('/public/images/cartas_fundo/<?= htmlspecialchars($game['imagem_fundo_card']) ?>'); background-size: cover; width: 60px; height: 80px; position: relative; border-radius: 4px;">
+                         style="background-image: url('/storage/uploads/cardgames/<?= $game['id_cardgame'] ?>/<?= htmlspecialchars($game['imagem_fundo_card']) ?>'); background-size: cover; width: 60px; height: 80px; position: relative; border-radius: 4px;">
                       <span class="cliente-cardgame-name bg-dark bg-opacity-75 text-light small px-1" style="position:absolute; bottom:0; left:0; right:0;">
                         <?= htmlspecialchars($game['nome']) ?>
                       </span>
