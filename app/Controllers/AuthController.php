@@ -17,33 +17,33 @@ class AuthController extends Controller
         require_once __DIR__ . '/../../app/Views/auth/login.php';
     }
 
-    public function autenticar()
-    {
-        $email = $_POST['login'] ?? '';
-        $senha = $_POST['senha'] ?? '';
+	public function autenticar()
+	{
+		$email = $_POST['login'] ?? '';
+		$senha = $_POST['senha'] ?? '';
 
-        $loja = Loja::buscarPorLogin($email);
+		$loja = Loja::buscarPorLogin($email);
 
-        if ($loja && password_verify($senha, $loja['senha'])) {
-            // Salva dados da loja na sessão com os nomes corretos
-            $_SESSION['LOJA'] = [
-                'id_loja'    => $loja['id_loja'],
-                'nome_loja'  => $loja['nome_loja'],
-                'logo'       => $loja['logo'],        // campo correto da tabela
-                'cor_tema'   => $loja['cor_tema'],    // campo correto da tabela
-                'favicon'    => $loja['favicon'] ?? null
-            ];
+		if ($loja && password_verify($senha, $loja['senha'])) {
+			$_SESSION['LOJA'] = [
+				'id_loja'    => $loja['id_loja'],
+				'nome_loja'  => $loja['nome_loja'],
+				'logo'       => $loja['logo'],
+				'cor_tema'   => $loja['cor_tema'],
+				'favicon'    => $loja['favicon'] ?? null
+			];
 
-            // Salva dados do usuário também
-            $_SESSION['USUARIO'] = [
-                'id_usuario' => $loja['id_usuario'],
-                'perfil'     => $loja['perfil'],
-                'email'      => $email
-            ];
+			// Certifique-se de que 'nome' existe no array $loja retornado do banco
+			$_SESSION['USUARIO'] = [
+				'id_usuario' => $loja['id_usuario'],
+				'nome'       => $loja['nome'] ?? 'Usuário sem nome',
+				'perfil'     => $loja['perfil'],
+				'email'      => $email
+			];
 
-            header("Location: /home");
-            exit;
-        }
+			header("Location: /home");
+			exit;
+		}
 
         $_SESSION['erro_login'] = "Login inválido";
         header("Location: /login");

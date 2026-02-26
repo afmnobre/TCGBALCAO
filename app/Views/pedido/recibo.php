@@ -4,7 +4,7 @@
 <div class="recibo">
     <div class="logo" style="text-align:center;">
         <?php if (!empty($loja['logo'])): ?>
-            <img src="/storage/uploads/<?= htmlspecialchars($loja['id_loja'] ?? '') ?>/<?= htmlspecialchars($loja['logo'] ?? '') ?>"
+            <img src="/storage/uploads/lojas/<?= htmlspecialchars($loja['id_loja'] ?? '') ?>/<?= htmlspecialchars($loja['logo'] ?? '') ?>"
                  alt="<?= htmlspecialchars($loja['nome_loja'] ?? '') ?>">
         <?php endif; ?>
     </div>
@@ -90,7 +90,7 @@
 <div class="recibo">
     <div class="logo" style="text-align:center;">
         <?php if (!empty($loja['logo'])): ?>
-            <img src="/storage/uploads/<?= htmlspecialchars($loja['id_loja'] ?? '') ?>/<?= htmlspecialchars($loja['logo'] ?? '') ?>"
+            <img src="/storage/uploads/lojas/<?= htmlspecialchars($loja['id_loja'] ?? '') ?>/<?= htmlspecialchars($loja['logo'] ?? '') ?>"
                  alt="<?= htmlspecialchars($loja['nome_loja'] ?? '') ?>">
         <?php endif; ?>
     </div>

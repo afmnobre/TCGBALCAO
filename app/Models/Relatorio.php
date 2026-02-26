@@ -291,12 +291,13 @@ class Relatorio
 	public function getTopClientes($idLoja, $ano)
 	{
 		$sql = "
-			SELECT c.nome, SUM(p.valor_variado) as total
+			SELECT c.nome, SUM(pp.valor) as total
 			FROM pedidos p
 			JOIN clientes c ON c.id_cliente = p.id_cliente
+			JOIN pedido_pagamento pp ON p.id_pedido = pp.id_pedido
 			WHERE p.id_loja = :idLoja
 			AND YEAR(p.data_pedido) = :ano
-			GROUP BY c.id_cliente
+			GROUP BY c.id_cliente, c.nome
 			ORDER BY total DESC
 			LIMIT 5
 		";
@@ -304,11 +305,12 @@ class Relatorio
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([
 			':idLoja' => $idLoja,
-			':ano' => $ano
+			':ano'    => $ano
 		]);
 
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
+
 
 	public function getTopProdutos($idLoja, $ano)
 	{

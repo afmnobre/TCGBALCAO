@@ -127,34 +127,21 @@ class Cliente
         return true;
     }
 
-    public function excluir($id, $id_loja)
-    {
-        $stmt = $this->db->prepare("
-            DELETE FROM clientes_lojas
-            WHERE id_cliente = :id AND id_loja = :id_loja
-        ");
-        $stmt->execute([
-            'id'      => $id,
-            'id_loja' => $id_loja
-        ]);
+	public function excluir($id, $id_loja)
+	{
+		// Removemos APENAS o vínculo com a loja atual.
+		// O cadastro na tabela 'clientes' permanece intocado para preservar
+		// o histórico em pedidos e torneios.
+		$stmt = $this->db->prepare("
+			DELETE FROM clientes_lojas
+			WHERE id_cliente = :id AND id_loja = :id_loja
+		");
 
-        $stmt2 = $this->db->prepare("
-            DELETE FROM clientes_cardgames
-            WHERE id_cliente = :id
-        ");
-        $stmt2->execute(['id' => $id]);
-
-        $stmt3 = $this->db->prepare("
-            SELECT COUNT(*) FROM clientes_lojas WHERE id_cliente = :id
-        ");
-        $stmt3->execute(['id' => $id]);
-        $total = $stmt3->fetchColumn();
-
-        if ($total == 0) {
-            $stmt4 = $this->db->prepare("DELETE FROM clientes WHERE id_cliente = :id");
-            $stmt4->execute(['id' => $id]);
-        }
-    }
+		return $stmt->execute([
+			'id'      => $id,
+			'id_loja' => $id_loja
+		]);
+	}
 
     public function listarCardgames($id_cliente)
     {

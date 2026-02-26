@@ -56,28 +56,33 @@ class ProdutoController extends Controller
         ]);
     }
 
-    public function atualizar($id)
-    {
-        $dados = [
-            'id_produto'        => $id,
-            'nome'              => $_POST['nome'],
-            'emoji'             => $_POST['emoji'],
-            'valor_venda'       => str_replace(',', '.', str_replace('.', '', $_POST['valor_venda'])),
-            'valor_compra'      => str_replace(',', '.', str_replace('.', '', $_POST['valor_compra'])),
-            'controlar_estoque' => isset($_POST['controlar_estoque']) ? 1 : 0,
-            'estoque_atual'     => $_POST['estoque_atual'] ?? 0,
-            'estoque_alerta'    => $_POST['estoque_alerta'] ?? 0,
-            'ordem_exibicao'    => $_POST['ordem_exibicao'] ?? 0,
-            'id_fornecedor'     => $_POST['id_fornecedor'] ?? null,
-            'id_loja'           => $_SESSION['LOJA']['id_loja']
-        ];
+	public function atualizar($id)
+	{
+		$produtoModel = new Produto();
 
-        $produto = new Produto();
-        $produto->atualizar($dados);
+		// 1. Busca o produto atual para saber qual era a ordem dele
+		$produtoAtual = $produtoModel->buscar($id, $_SESSION['LOJA']['id_loja']);
 
-        header("Location: /produto");
-        exit;
-    }
+		$dados = [
+			'id_produto'        => $id,
+			'nome'              => $_POST['nome'],
+			'emoji'             => $_POST['emoji'],
+			'valor_venda'       => str_replace(',', '.', str_replace('.', '', $_POST['valor_venda'])),
+			'valor_compra'      => str_replace(',', '.', str_replace('.', '', $_POST['valor_compra'])),
+			'controlar_estoque' => isset($_POST['controlar_estoque']) ? 1 : 0,
+			'estoque_atual'     => $_POST['estoque_atual'] ?? 0,
+			'estoque_alerta'    => $_POST['estoque_alerta'] ?? 0,
+			'id_fornecedor'     => $_POST['id_fornecedor'] ?? null,
+			'id_loja'           => $_SESSION['LOJA']['id_loja'],
+			// 2. Usa a ordem que já estava no banco de dados
+			'ordem_exibicao'    => $produtoAtual['ordem_exibicao']
+		];
+
+		$produtoModel->atualizar($dados);
+
+		header("Location: /produto");
+		exit;
+	}
 
     public function ativar($id)
     {
@@ -96,26 +101,25 @@ class ProdutoController extends Controller
         exit;
     }
 
-    public function salvarOrdem()
-    {
-        $ordens = $_POST['ordem'] ?? [];
+	public function salvarOrdem()
+	{
+		// Recebe o array de IDs na nova ordem do formulário
+		$ids_produtos = $_POST['id_produto'] ?? [];
 
-        // Verifica se existem números repetidos
-        if (count($ordens) !== count(array_unique($ordens))) {
-            $_SESSION['flash'] = "Erro: não pode haver números repetidos na ordem!";
-            header("Location: /produto");
-            exit;
-        }
+		if (!empty($ids_produtos)) {
+			$produtoModel = new Produto();
+			$novaOrdem = 1;
 
-        $produtoModel = new Produto();
-        foreach ($ordens as $id_produto => $ordem) {
-            $produtoModel->atualizarOrdem($id_produto, $ordem);
-        }
+			foreach ($ids_produtos as $id_produto) {
+				$produtoModel->atualizarOrdem($id_produto, $novaOrdem);
+				$novaOrdem++;
+			}
+			$_SESSION['flash'] = "Ordem atualizada com sucesso!";
+		}
 
-        $_SESSION['flash'] = "Ordem de produtos atualizada com sucesso!";
-        header("Location: /produto");
-        exit;
-    }
+		header("Location: /produto");
+		exit;
+	}
 }
 
 

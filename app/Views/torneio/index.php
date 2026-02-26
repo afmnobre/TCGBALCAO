@@ -1,9 +1,8 @@
-<h2 class="text-light mb-3">Torneios</h2>
-
-<!-- Botão para criar novo torneio -->
-<div class="mb-3">
-    <a href="/torneio/criar" class="btn btn-primary">+ Novo Torneio</a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="text-light">Torneios</h2>
+  <a href="/torneio/criar"  class="btn btn-primary btn-sm">➕ Novo Torneio</a>
 </div>
+
 
 <!-- Lista de torneios -->
 <?php if (!empty($torneios)): ?>
@@ -32,7 +31,7 @@
                             <a href="/torneio/gerenciar/<?= $torneio['id_torneio'] ?>" class="btn btn-sm btn-info">Gerenciar</a>
                             <button class="btn btn-sm btn-primary"  onclick="window.open('/torneiosuico/verPontuacao/<?= $torneio['id_torneio'] ?>','_blank')">🏆 Resultado</button>
                             <a href="/torneio/excluir/<?= $torneio['id_torneio'] ?>"
-                                class="btn btn-sm btn-outline-danger"
+                                class="btn btn-sm btn-danger"
                                 onclick="return confirm('ATENÇÃO: Isso apagará permanentemente o torneio, todos os jogadores, rodadas e resultados. Confirma?')"
                                 title="Excluir Torneio">
                                 <i class="fas fa-trash-alt">Excluir</i>

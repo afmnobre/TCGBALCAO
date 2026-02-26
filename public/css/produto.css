@@ -1,0 +1,35 @@
+/* Faz a linha inteira mostrar o cursor de 'mãozinha de arrastar' */
+#sortable-produtos tr {
+    cursor: grab;
+    transition: background-color 0.2s;
+}
+
+/* Quando o usuário clica e segura */
+#sortable-produtos tr:active {
+    cursor: grabbing;
+}
+
+/* Estilo da linha enquanto ela está sendo levada para outro lugar */
+.sortable-chosen {
+    background-color: #343a40 !important;
+    opacity: 0.8;
+}
+
+/* Estilo do 'fantasma' (o espaço vazio onde a linha vai cair) */
+.table-active {
+    border: 2px dashed #28a745 !important;
+}
+
+/* Classe para Alerta de Estoque Baixo */
+/* Força o fundo vermelho acima do efeito zebra (striped) */
+.estoque-critico {
+    background-color: #ff0000 !important; /* Vermelho Vivo */
+    color: white !important;
+    font-weight: bold;
+    box-shadow: inset 0 0 0 9999px #ff0000 !important; /* Truque para cobrir o overlay do striped */
+}
+
+/* Garante que o texto fique visível */
+.estoque-critico * {
+    color: white !important;
+}

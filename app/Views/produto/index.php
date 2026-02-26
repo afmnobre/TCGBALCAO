@@ -1,58 +1,71 @@
-<h2 class="text-light mb-3">Produtos da Loja</h2>
-
-<!-- Botão para criar novo produto -->
-<div class="mb-3">
-    <a href="/produto/criar" class="btn btn-primary">➕ Novo Produto</a>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="text-light">Produtos da Loja</h2>
+  <div>
+      <span class="badge bg-secondary me-2">Dica: Arraste as linhas para reordenar</span>
+      <a href="/produto/criar" class="btn btn-primary btn-sm">➕ Novo Produto</a>
+  </div>
 </div>
 
-<form method="POST" action="/produto/salvarOrdem">
+<form id="formOrdem" method="POST" action="/produto/salvarOrdem">
     <div class="table-responsive">
         <table class="table table-dark table-striped table-hover align-middle">
             <thead>
                 <tr>
+                    <th width="50"></th>
                     <th>Nome</th>
                     <th>Emoji</th>
                     <th>Valor Venda</th>
                     <th>Valor Compra</th>
                     <th>Controla Estoque</th>
                     <th>Estoque Atual</th>
-                    <th>Estoque Alerta</th>
-                    <th>Ordem de Exibição</th>
+                    <th class="text-center">Ordem Atual</th>
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php $total = count($produtos); ?>
+            <tbody id="sortable-produtos">
                 <?php foreach ($produtos as $produto): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($produto['nome']) ?></td>
+                    <?php
+                        // Lógica de alerta de estoque
+                        $alertaEstoque = false;
+                        if ($produto['controlar_estoque'] == 1 && $produto['estoque_atual'] <= $produto['estoque_alerta']) {
+                            $alertaEstoque = true;
+                        }
+                    ?>
+                    <tr data-id="<?= $produto['id_produto'] ?>">
+                        <td class="text-center text-muted" style="width: 30px;">
+                            <i class="bi bi-grip-vertical">☰</i>
+                        </td>
+                        <td>
+                            <input type="hidden" name="id_produto[]" value="<?= $produto['id_produto'] ?>">
+                            <?= htmlspecialchars($produto['nome']) ?>
+                        </td>
                         <td><?= htmlspecialchars($produto['emoji']) ?></td>
                         <td><span class="badge bg-success">R$ <?= number_format($produto['valor_venda'], 2, ',', '.') ?></span></td>
+
                         <td><span class="badge bg-secondary">R$ <?= number_format($produto['valor_compra'], 2, ',', '.') ?></span></td>
-                        <td>
-                            <?php if (!empty($produto['controlar_estoque'])): ?>
-                                <span class="badge bg-info">Sim</span>
+
+                        <td class="text-center">
+                            <?php if ($produto['controlar_estoque'] == 1): ?>
+                                <span class="badge bg-info text-dark">Sim</span>
                             <?php else: ?>
-                                <span class="badge bg-warning text-dark">Não</span>
+                                <span class="badge bg-light text-dark">Não</span>
                             <?php endif; ?>
                         </td>
-                        <td><?= $produto['estoque_atual'] ?></td>
-                        <td><?= $produto['estoque_alerta'] ?></td>
-                        <td>
-                            <select class="form-select form-select-sm" name="ordem[<?= $produto['id_produto'] ?>]">
-                                <?php for ($i = 1; $i <= $total; $i++): ?>
-                                    <option value="<?= $i ?>" <?= ($produto['ordem_exibicao'] == $i) ? 'selected' : '' ?>>
-                                        <?= $i ?>
-                                    </option>
-                                <?php endfor; ?>
-                            </select>
+
+                        <td class="<?= $alertaEstoque ? 'estoque-critico' : '' ?>">
+                            <?= $produto['estoque_atual'] ?>
+                        </td>
+
+                        <td class="text-center">
+                            <span class="badge bg-dark border show-ordem"><?= $produto['ordem_exibicao'] ?></span>
                         </td>
                         <td>
-                            <a class="btn btn-sm btn-warning" href="/produto/editar/<?= $produto['id_produto'] ?>">✏️ Editar</a>
+                            <a class="btn btn-sm btn-warning" href="/produto/editar/<?= $produto['id_produto'] ?>" title="Editar">✏️ Editar</a>
+
                             <?php if ($produto['ativo'] == 1): ?>
-                                <a class="btn btn-sm btn-danger" href="/produto/desativar/<?= $produto['id_produto'] ?>">🚫 Desativar</a>
+                                <a class="btn btn-sm btn-danger" href="/produto/desativar/<?= $produto['id_produto'] ?>" title="Desativar">🚫 Desativar</a>
                             <?php else: ?>
-                                <a class="btn btn-sm btn-success" href="/produto/ativar/<?= $produto['id_produto'] ?>">✅ Ativar</a>
+                                <a class="btn btn-sm btn-success" href="/produto/ativar/<?= $produto['id_produto'] ?>" title="Ativar">✅ Ativar</a>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -60,8 +73,7 @@
             </tbody>
         </table>
     </div>
-
-    <button class="btn btn-primary mt-3" type="submit">💾 Salvar Ordem</button>
+    <button class="btn btn-success mt-3" type="submit">💾 Salvar Nova Ordem</button>
 </form>
 
 

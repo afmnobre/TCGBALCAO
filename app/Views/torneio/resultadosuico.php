@@ -21,7 +21,7 @@ function formatarDataHora($valor) {
 <body>
 <div class="header">
     <?php if (!empty($loja['logo'])): ?>
-        <img src="/storage/uploads/<?= $loja['id_loja'] ?>/<?= htmlspecialchars($loja['logo']) ?>" alt="Logo da Loja"><br>
+        <img src="/storage/uploads/lojas/<?= $loja['id_loja'] ?>/<?= htmlspecialchars($loja['logo']) ?>" alt="Logo da Loja"><br>
     <?php endif; ?>
     <strong><?= htmlspecialchars($loja['nome_loja']) ?></strong><br>
 </div>
@@ -49,22 +49,40 @@ function formatarDataHora($valor) {
                 <th>Vitórias 2x0</th>
             </tr>
         </thead>
-        <tbody>
-            <?php $posicao = 1; ?>
-            <?php foreach ($classificacaoFinal as $linha): ?>
-                <tr>
-                    <td><?= $posicao++ ?></td>
-                    <td><?= $linha['nome'] !== null ? htmlspecialchars($linha['nome']) : 'BYE' ?></td>
-                    <td><?= $linha['vitorias'] ?></td>
-                    <td><?= $linha['derrotas'] ?></td>
-                    <td><?= $linha['empates'] ?></td>
-                    <td><?= $linha['bye'] ?></td>
-                    <td><?= $linha['pontos'] ?></td>
-                    <td><?= $linha['forca_oponentes'] ?></td>
-                    <td><?= $linha['vitorias_2x0'] ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
+		<tbody>
+			<?php $posicao = 1; ?>
+			<?php foreach ($classificacaoFinal as $linha): ?>
+				<tr>
+					<td style="font-weight: bold; text-align: center; vertical-align: middle;">
+						<?php
+						if ($posicao == 1) {
+							// Ouro
+							echo '<span style="color: #FFD700 !important; font-size: 20px;">🥇</span><br><small style="color: #FFD700;">1º Lugar</small>';
+						} elseif ($posicao == 2) {
+							// Prata
+							echo '<span style="color: #C0C0C0 !important; font-size: 20px;">🥈</span><br><small style="color: #C0C0C0;">2º Lugar</small>';
+						} elseif ($posicao == 3) {
+							// Bronze
+							echo '<span style="color: #CD7F32 !important; font-size: 20px;">🥉</span><br><small style="color: #CD7F32;">3º Lugar</small>';
+						} else {
+							echo $posicao;
+						}
+						?>
+					</td>
+					<td style="<?= $posicao <= 3 ? 'font-weight: bold;' : '' ?>">
+						<?= $linha['nome'] !== null ? htmlspecialchars($linha['nome']) : 'BYE' ?>
+					</td>
+					<td><?= $linha['vitorias'] ?></td>
+					<td><?= $linha['derrotas'] ?></td>
+					<td><?= $linha['empates'] ?></td>
+					<td><?= $linha['bye'] ?></td>
+					<td style="font-weight: bold;"><?= $linha['pontos'] ?></td>
+					<td><?= $linha['forca_oponentes'] ?></td>
+					<td><?= $linha['vitorias_2x0'] ?></td>
+				</tr>
+				<?php $posicao++; ?>
+			<?php endforeach; ?>
+		</tbody>
     </table>
 <?php else: ?>
     <p>Nenhum resultado disponível.</p>

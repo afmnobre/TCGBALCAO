@@ -14,7 +14,7 @@
 <body>
     <div class="header">
         <?php if (!empty($loja['logo'])): ?>
-            <img src="/storage/uploads/<?= $loja['id_loja'] ?>/<?= htmlspecialchars($loja['logo']) ?>" alt="Logo da Loja"><br>
+            <img src="/storage/uploads/lojas/<?= $loja['id_loja'] ?>/<?= htmlspecialchars($loja['logo']) ?>" alt="Logo da Loja"><br>
         <?php endif; ?>
         <strong><?= htmlspecialchars($loja['nome_loja']) ?></strong>
     </div>

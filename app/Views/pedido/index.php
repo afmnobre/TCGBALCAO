@@ -18,42 +18,109 @@
 </div>
 
 <!-- Filtros de Cardgames -->
-<div class="bg-dark py-3 px-2 w-100">
-  <div class="container-fluid">
-    <strong class="text-light">Filtrar por Cardgames:</strong>
+<div class="bg-dark py-3 px-3 w-100 border-bottom border-secondary">
+  <div class="container-fluid d-flex align-items-center justify-content-between">
 
-    <div class="cards-grid mt-3">
-      <?php foreach ($cardgames as $cardgame): ?>
-        <?php $checked = in_array((string)$cardgame['id_cardgame'], array_map('strval', ($_GET['cardgames'] ?? []))) ? 'checked' : ''; ?>
-        <label class="magic-card">
+    <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+      <strong class="text-light me-3 text-nowrap">Filtrar por Cardgames:</strong>
 
-          <input class="magic-check"
-                 type="checkbox"
-                 name="cardgames[]"
-                 value="<?= $cardgame['id_cardgame'] ?>"
-                 <?= $checked ?>
-                 onchange="filtrarClientes()">
+      <div class="d-flex flex-row align-items-center flex-nowrap custom-scroll"
+           style="gap: 12px; overflow-x: auto; padding: 10px 0; scrollbar-width: none;">
 
-          <img src="/storage/uploads/cardgames/<?= $cardgame['id_cardgame'] ?>/<?= htmlspecialchars($cardgame['imagem_fundo_card']) ?>"
-               alt="<?= htmlspecialchars($cardgame['nome']) ?>">
+        <?php foreach ($cardgames as $cardgame): ?>
+          <?php $checked = in_array((string)$cardgame['id_cardgame'], array_map('strval', ($_GET['cardgames'] ?? []))) ? 'checked' : ''; ?>
 
-          <div class="card-overlay">
-            <small><?= htmlspecialchars($cardgame['nome']) ?></small>
-          </div>
+          <label class="magic-card p-0 m-0">
+            <input class="magic-check"
+                   type="checkbox"
+                   name="cardgames[]"
+                   value="<?= $cardgame['id_cardgame'] ?>"
+                   <?= $checked ?>
+                   onchange="filtrarClientes()">
 
-        </label>
-      <?php endforeach; ?>
+            <img src="/storage/uploads/cardgames/<?= $cardgame['id_cardgame'] ?>/<?= htmlspecialchars($cardgame['imagem_fundo_card']) ?>"
+                 alt="<?= htmlspecialchars($cardgame['nome']) ?>">
+
+            <div class="card-overlay">
+
+            </div>
+          </label>
+        <?php endforeach; ?>
+      </div>
+    </div>
+
+    <div class="ms-4">
+      <button type="submit" form="formPedidos" class="btn btn-success px-4 fw-bold">
+        💾 Salvar Pedidos
+      </button>
     </div>
   </div>
 </div>
 
+<style>
+/* Estilo base do Card */
+.magic-card {
+    flex: 0 0 60px;
+    height: 85px;
+    position: relative;
+    cursor: pointer;
+    display: block;
+    overflow: hidden;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    border: 2px solid #444; /* Borda padrão */
+    line-height: 0;
+}
 
-<br>
+/* Esconde o checkbox fisicamente mas mantém funcional */
+.magic-check {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
 
-<!-- Botão salvar -->
-<button type="submit" form="formPedidos" class="btn btn-success mb-3">
-  💾 Salvar Pedidos
-</button>
+/* IMAGEM */
+.magic-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: grayscale(40%); /* Fica levemente cinza quando não selecionado */
+}
+
+/* EFEITO QUANDO SELECIONADO (A MÁGICA ACONTECE AQUI) */
+.magic-card:has(.magic-check:checked) {
+    border: 4px solid #28a745 !important; /* Borda Grossa Verde */
+    transform: scale(1.08);
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+}
+
+.magic-card:has(.magic-check:checked) img {
+    filter: grayscale(0%); /* Volta a cor total */
+}
+
+/* Overlay do Nome */
+.card-overlay {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    text-align: center;
+    font-size: 9px;
+    padding: 2px 0;
+}
+
+/* Classe para o vermelho puro que ignora o efeito striped do Bootstrap */
+.estoque-alerta-vivo {
+    background-color: #ff0000 !important;
+    color: #ffffff !important; /* Texto branco para contraste */
+    box-shadow: inset 0 0 0 9999px #ff0000 !important; /* Garante a cor sólida */
+}
+
+</style>
+
 
 <form id="formPedidos" method="POST" action="/pedido/salvar">
   <input type="hidden" name="dataSelecionada" id="dataSelecionadaHidden" value="<?= $dataSelecionada ?>">
@@ -66,21 +133,22 @@
       <thead>
         <tr>
           <th>Cliente</th>
-          <?php foreach ($produtos as $produto): ?>
-            <?php
-              $classeEstoque = '';
-              $estoqueAtual   = (int)($produto['estoque_atual'] ?? 0);
-              $estoqueAlerta  = (int)($produto['estoque_alerta'] ?? 0);
-              $controlar      = (int)($produto['controlar_estoque'] ?? 0);
+		<?php foreach ($produtos as $produto): ?>
+		  <?php
+			$classeEstoque = '';
+			$estoqueAtual   = (int)($produto['estoque_atual'] ?? 0);
+			$estoqueAlerta  = (int)($produto['estoque_alerta'] ?? 0);
+			$controlar      = (int)($produto['controlar_estoque'] ?? 0);
 
-              if ($controlar === 1 && $estoqueAtual <= $estoqueAlerta) {
-                  $classeEstoque = 'table-danger';
-              }
-            ?>
-            <th class="<?= $classeEstoque ?>">
-              <?= htmlspecialchars($produto['emoji']) ?> <?= htmlspecialchars($produto['nome']) ?>
-            </th>
-          <?php endforeach; ?>
+			// Se o estoque estiver baixo, aplica o vermelho vivo
+			if ($controlar === 1 && $estoqueAtual <= $estoqueAlerta) {
+				$classeEstoque = 'estoque-alerta-vivo';
+			}
+		  ?>
+		  <th class="<?= $classeEstoque ?>">
+			<?= htmlspecialchars($produto['emoji']) ?> <?= htmlspecialchars($produto['nome']) ?>
+		  </th>
+		<?php endforeach; ?>
           <th>💰 Variado</th>
           <th>Total</th>
           <th>Pago?</th>
@@ -133,48 +201,52 @@
                   <button type="button" onclick="abrirPopupVariado(<?= $cliente['id_cliente'] ?>)">📝</button>
               </div>
             </td>
-				<td id="total_<?= $cliente['id_cliente'] ?>"
-					class="<?php
-						$temValor = false;
-						$valorVariado = (float)($pedidoCliente['valor_variado'] ?? 0);
+			<td id="total_<?= $cliente['id_cliente'] ?>"
+				class="<?php
+					$temValor = false;
+					$valorVariado = (float)($pedidoCliente['valor_variado'] ?? 0);
 
-						// Verifica se tem itens ou valor variado
-						if ($valorVariado > 0) {
-							$temValor = true;
-						} elseif (!empty($pedidoCliente['itens'])) {
-							foreach ($pedidoCliente['itens'] as $item) {
-								if ($item['quantidade'] > 0) {
-									$temValor = true;
-									break;
-								}
+					if ($valorVariado > 0) {
+						$temValor = true;
+					} elseif (!empty($pedidoCliente['itens'])) {
+						foreach ($pedidoCliente['itens'] as $item) {
+							if ($item['quantidade'] > 0) {
+								$temValor = true;
+								break;
 							}
 						}
+					}
 
-						// Define a classe visual do Bootstrap
-						if ($temValor && ($pedidoCliente['pedido_pago'] ?? 0) == 0) {
-							echo 'table-danger text-center fw-bold'; // vermelho: tem valor mas não pago
-						} elseif (($pedidoCliente['pedido_pago'] ?? 0) == 1) {
-							echo 'table-success text-center fw-bold'; // verde: pago
-						} else {
-							echo 'table-dark text-center'; // padrão escuro
+					// Classes de estrutura e texto
+					if ($temValor && ($pedidoCliente['pedido_pago'] ?? 0) == 0) {
+						echo 'text-center fw-bold text-white';
+					} elseif (($pedidoCliente['pedido_pago'] ?? 0) == 1) {
+						echo 'text-center fw-bold text-white';
+					} else {
+						echo 'table-dark text-center';
+					}
+				?>"
+				style="<?php
+					if ($temValor && ($pedidoCliente['pedido_pago'] ?? 0) == 0) {
+						// O box-shadow: none mata o efeito de listra (striped) do Bootstrap na célula
+						echo 'background-color: #ff0000 !important; color: #ffffff !important; box-shadow: none !important;';
+					} elseif (($pedidoCliente['pedido_pago'] ?? 0) == 1) {
+						echo 'background-color: #28a745 !important; color: #ffffff !important; box-shadow: none !important;';
+					}
+				?>"
+				data-total="<?php
+					$valorItens = 0;
+					if (!empty($pedidoCliente['itens'])) {
+						foreach ($pedidoCliente['itens'] as $item) {
+							$valorItens += $item['quantidade'] * ($item['valor_unitario'] ?? 0);
 						}
-					?>"
-					data-total="<?php
-						// Calcula o total do pedido (itens + variado)
-						$valorItens = 0;
-						if (!empty($pedidoCliente['itens'])) {
-							foreach ($pedidoCliente['itens'] as $item) {
-								$valorItens += $item['quantidade'] * ($item['valor_unitario'] ?? 0);
-							}
-						}
-						$valorTotal = $valorItens + $valorVariado;
-						echo $valorTotal;
-					?>">
-					<?= $pedidoCliente
-						? 'R$ '.number_format($valorTotal, 2, ',', '.')
-						: 'R$ 0,00' ?>
-				</td>
-                <td>
+					}
+					$valorTotal = $valorItens + $valorVariado;
+					echo $valorTotal;
+				?>">
+				<?= 'R$ ' . number_format($valorTotal, 2, ',', '.') ?>
+			</td>
+            <td>
 				<input type="checkbox" name="pago[<?= $cliente['id_cliente'] ?>]"
 					   onchange="abrirModalPagamento(
 						   <?= $pedidoCliente['id_pedido'] ?? 0 ?>,
@@ -183,7 +255,7 @@
 						   this
 					   )"
 					   <?= ($pedidoCliente && $pedidoCliente['pedido_pago'] == 1) ? 'checked' : '' ?>>
-                    </td>
+            </td>
             <td class="text-center">
               <?php if ($pedidoCliente && $pedidoCliente['pedido_pago'] == 1): ?>
                 <a href="#"

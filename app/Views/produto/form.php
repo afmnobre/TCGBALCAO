@@ -1,3 +1,12 @@
+<style>
+#emoji {
+    text-align: center;
+    font-size: 1.5rem;
+    width: 80px;
+    flex: none; /* Impede que o input de emoji ocupe a tela toda se não quiser */
+}
+</style>
+
 <h2 class="text-light mb-3">
     <?= isset($produto) ? '✏️ Editar Produto' : '➕ Novo Produto' ?>
 </h2>
@@ -12,13 +21,22 @@
             </div>
 
             <!-- Campo Emoji com seletor -->
-            <div class="mb-3">
-              <label for="emoji" class="form-label">Emoji</label>
-              <div class="input-group">
-                <input type="text" id="emoji" name="emoji" class="form-control" value="<?= $produto['emoji'] ?? '' ?>">
-                <button type="button" id="emojiPickerBtn" class="btn btn-outline-secondary">😀</button>
-              </div>
-            </div>
+			<div class="mb-3">
+				<label for="emoji" class="form-label text-light">Emoji do Produto</label>
+				<div class="input-group" style="max-width: 250px;">
+					<input type="text"
+						   class="form-control bg-dark text-white border-secondary text-center fs-4"
+						   id="emoji"
+						   name="emoji"
+						   value="<?= htmlspecialchars($produto['emoji'] ?? '📦') ?>"
+						   readonly>
+					<button class="btn btn-outline-info" type="button" id="emoji-trigger">
+						😀 Escolher
+					</button>
+				</div>
+				<div id="picker-container" style="position: absolute; z-index: 9999;"></div>
+			</div>
+
 
             <!-- Container para o picker -->
             <div id="emojiContainer" style="display:none; position:absolute; z-index:1000;"></div>
@@ -53,11 +71,6 @@
             <div class="mb-3">
                 <label for="estoque_alerta" class="form-label">Estoque Alerta (mínimo)</label>
                 <input type="number" id="estoque_alerta" name="estoque_alerta" class="form-control" value="<?= $produto['estoque_alerta'] ?? 0 ?>">
-            </div>
-
-            <div class="mb-3">
-                <label for="ordem_exibicao" class="form-label">Ordem de Exibição</label>
-                <input type="number" id="ordem_exibicao" name="ordem_exibicao" class="form-control" value="1" readonly>
             </div>
 
             <div class="mb-3">

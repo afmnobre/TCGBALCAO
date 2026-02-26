@@ -6,9 +6,21 @@
   <?php unset($_SESSION['flash']); ?>
 <?php endif; ?>
 
+
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2 class="text-light">Clientes da Loja</h2>
   <a href="/cliente/criar" class="btn btn-primary btn-sm">➕ Novo Cliente</a>
+</div>
+
+<div class="card bg-dark border-secondary mb-3">
+    <div class="card-body p-2">
+        <div class="input-group">
+            <span class="input-group-text bg-dark border-secondary text-light">🔍</span>
+            <input type="text" id="buscaCliente" class="form-control bg-dark text-light border-secondary"
+                   placeholder="Digite o nome do cliente para filtrar...">
+        </div>
+    </div>
 </div>
 
 <div class="table-responsive">
@@ -22,10 +34,10 @@
         <th>Ações</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="tabelaClientesCorpo">
       <?php if (!empty($clientes)): ?>
         <?php foreach ($clientes as $cliente): ?>
-          <tr>
+          <tr class="item-cliente" data-nome="<?= strtolower(htmlspecialchars($cliente['nome'])) ?>">
             <td><?= htmlspecialchars($cliente['nome']) ?></td>
             <td><?= htmlspecialchars($cliente['email']) ?></td>
             <td class="telefone-coluna"><?= htmlspecialchars($cliente['telefone']) ?></td>
@@ -55,7 +67,7 @@
           </tr>
         <?php endforeach; ?>
       <?php else: ?>
-        <tr>
+        <tr id="semResultados">
           <td colspan="5" class="text-center text-muted">Nenhum cliente cadastrado ainda.</td>
         </tr>
       <?php endif; ?>
@@ -63,4 +75,29 @@
   </table>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputBusca = document.getElementById('buscaCliente');
+    const itensClientes = document.querySelectorAll('.item-cliente');
 
+    inputBusca.addEventListener('input', function() {
+        // Normaliza o termo de busca: minúsculo e remove acentos
+        const termoBusca = this.value.toLowerCase()
+                                    .normalize('NFD')
+                                    .replace(/[\u0300-\u036f]/g, "");
+
+        itensClientes.forEach(item => {
+            // Normaliza o nome guardado no data-nome
+            const nomeCliente = item.getAttribute('data-nome')
+                                    .normalize('NFD')
+                                    .replace(/[\u0300-\u036f]/g, "");
+
+            if (nomeCliente.includes(termoBusca)) {
+                item.style.display = ''; // Mostra a linha (estilo padrão)
+            } else {
+                item.style.display = 'none'; // Esconde a linha
+            }
+        });
+    });
+});
+</script>
