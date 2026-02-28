@@ -3,8 +3,11 @@ RewriteEngine On
 # Se já estiver dentro de /public, não reescreve
 RewriteRule ^public/ - [L]
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# Se o arquivo ou diretório existir dentro de public, serve diretamente
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^public/ - [L]
 
+# Encaminha tudo para public/index.php
 RewriteRule ^(.*)$ public/index.php?url=$1 [QSA,L]
 

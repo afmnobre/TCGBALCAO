@@ -8,6 +8,9 @@ $logoFile    = $loja['logo'] ?? 'logo.png';
 $faviconFile = $loja['favicon'] ?? 'favicon.ico';
 $corTema     = $loja['cor_tema'] ?? '#000'; // cor em hexadecimal
 
+// Define a URL base para assets
+$baseAssetUrl = '/public';
+
 $logoPath    = "/storage/uploads/lojas/{$idLoja}/{$logoFile}";
 $faviconPath = "/storage/uploads/lojas/{$idLoja}/{$faviconFile}";
 ?>
@@ -20,8 +23,8 @@ $nomeLoja    = $loja['nome_loja'] ?? 'Sistema TCGBalcão';
 $logoFile    = $loja['logo'] ?? 'logo.png';
 $faviconFile = $loja['favicon'] ?? 'favicon.ico';
 $corTema     = $loja['cor_tema'] ?? '#000';
-$logoPath    = "/storage/uploads/lojas/{$idLoja}/{$logoFile}";
-$faviconPath = "/storage/uploads/lojas/{$idLoja}/{$faviconFile}";
+$logoPath    = "{$baseAssetUrl}/storage/uploads/lojas/{$idLoja}/{$logoFile}";
+$faviconPath = "{$baseAssetUrl}/storage/uploads/lojas/{$idLoja}/{$faviconFile}";
 
 // Dados do Usuário Logado
 $usuarioLogado = $_SESSION['USUARIO'] ?? null;

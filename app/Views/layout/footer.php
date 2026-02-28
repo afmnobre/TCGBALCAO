@@ -5,7 +5,7 @@ $loja = $_SESSION['LOJA'] ?? [];
 
 $idLoja      = $loja['id_loja'] ?? 0;
 $faviconFile = $loja['favicon'] ?? 'favicon.ico';
-$faviconPath = "/storage/uploads/lojas/{$idLoja}/{$faviconFile}";
+$faviconPath = "{$baseAssetUrl}/storage/uploads/lojas/{$idLoja}/{$faviconFile}";
 $corTema     = $loja['cor_tema'] ?? '#000'; // cor dinâmica em hexadecimal
 ?>
 <footer class="text-light text-center py-1 fixed-bottom shadow-sm" style="background-color: <?= htmlspecialchars($corTema) ?>;">

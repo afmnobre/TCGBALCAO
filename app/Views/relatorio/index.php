@@ -3,23 +3,43 @@
   <button id="btnExportPDFTop" class="btn btn-primary btn-sm">📊 Exportar Planilha</button>
 </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-      <div class="d-flex gap-2">
-        <select id="filtroAno" class="form-select w-auto">
-          <?php for($y=2021;$y<=2026;$y++): ?>
-            <option value="<?= $y ?>" <?= $y==2026?'selected':'' ?>><?= $y ?></option>
-          <?php endfor; ?>
-        </select>
-        <select id="filtroMes" class="form-select w-auto">
-          <option value="">Ano inteiro</option>
-          <?php
-          $meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-          foreach($meses as $i=>$m): ?>
-            <option value="<?= $i+1 ?>"><?= $m ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-    </div>
+	<div class="card bg-dark border-secondary mb-4">
+		<div class="card-body">
+			<form method="GET" action="/relatorio" class="row g-3 align-items-end">
+				<div class="col-md-4">
+					<label class="form-label text-light">Mês</label>
+					<select name="mes" id="filtroMes" class="form-select bg-dark text-light border-secondary">
+						<option value="0" <?= ($mes_selecionado == 0) ? 'selected' : '' ?>>Todos os Meses</option>
+						<?php
+						$meses = [1=>'Janeiro', 2=>'Fevereiro', 3=>'Março', 4=>'Abril', 5=>'Maio', 6=>'Junho', 7=>'Julho', 8=>'Agosto', 9=>'Setembro', 10=>'Outubro', 11=>'Novembro', 12=>'Dezembro'];
+						foreach($meses as $num => $nome):
+							$sel = ($num == $mes_selecionado) ? 'selected' : '';
+						?>
+							<option value="<?= $num ?>" <?= $sel ?>><?= $nome ?></option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+
+				<div class="col-md-4">
+					<label class="form-label text-light">Ano</label>
+					<select name="ano" id="filtroAno" class="form-select bg-dark text-light border-secondary">
+						<?php
+						$anos = $anos_disponiveis ?? [date('Y')];
+						foreach($anos as $a):
+							$selAno = ($a == ($ano_selecionado ?? date('Y'))) ? 'selected' : '';
+						?>
+							<option value="<?= $a ?>" <?= $selAno ?>><?= $a ?></option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+
+				<div class="col-md-4">
+					<button type="submit" class="btn btn-primary w-100">📊 Filtrar Relatório</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
 
     <div class="bg-dark text-white p-4 rounded">
       <div class="row" id="kpis"></div>

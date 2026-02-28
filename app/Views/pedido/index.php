@@ -11,7 +11,7 @@
     <input type="text" id="pesquisaCliente" placeholder="Digite o nome..." class="form-control bg-dark text-light border-secondary">
   </div>
   <div class="col-md-5 d-flex align-items-end">
-    <div class="alert alert-secondary w-100 mb-0">
+    <div class="alert w-100 mb-0" style="background-color: #000F00; color: #fff; border: 1px solid #00d400; font-weight: bold;">
       <strong>Total Recebido no Dia:</strong> <span id="totalRecebido">R$ 0,00</span>
     </div>
   </div>
@@ -24,13 +24,13 @@
     <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
       <strong class="text-light me-3 text-nowrap">Filtrar por Cardgames:</strong>
 
-      <div class="d-flex flex-row align-items-center flex-nowrap custom-scroll"
+      <div class="d-flex flex-row align-items-center flex-nowrap custom-scroll flex-grow-1"
            style="gap: 12px; overflow-x: auto; padding: 10px 0; scrollbar-width: none;">
 
         <?php foreach ($cardgames as $cardgame): ?>
           <?php $checked = in_array((string)$cardgame['id_cardgame'], array_map('strval', ($_GET['cardgames'] ?? []))) ? 'checked' : ''; ?>
 
-          <label class="magic-card p-0 m-0">
+          <label class="magic-card p-0 m-0 flex-shrink-0">
             <input class="magic-check"
                    type="checkbox"
                    name="cardgames[]"
@@ -38,89 +38,22 @@
                    <?= $checked ?>
                    onchange="filtrarClientes()">
 
-            <img src="/storage/uploads/cardgames/<?= $cardgame['id_cardgame'] ?>/<?= htmlspecialchars($cardgame['imagem_fundo_card']) ?>"
-                 alt="<?= htmlspecialchars($cardgame['nome']) ?>">
-
-            <div class="card-overlay">
-
-            </div>
+            <img src="<?= $baseAssetUrl ?>/storage/uploads/cardgames/<?= $cardgame['id_cardgame'] ?>/<?= htmlspecialchars($cardgame['imagem_fundo_card']) ?>"
+                 alt="<?= htmlspecialchars($cardgame['nome']) ?>"
+                 class="img-fluid"> <div class="card-overlay"></div>
           </label>
         <?php endforeach; ?>
       </div>
     </div>
 
-    <div class="ms-4">
-      <button type="submit" form="formPedidos" class="btn btn-success px-4 fw-bold">
+    <div class="ms-4 flex-shrink-0">
+      <button type="submit" form="formPedidos" class="btn btn-success px-4 fw-bold text-nowrap">
         💾 Salvar Pedidos
       </button>
     </div>
+
   </div>
 </div>
-
-<style>
-/* Estilo base do Card */
-.magic-card {
-    flex: 0 0 60px;
-    height: 85px;
-    position: relative;
-    cursor: pointer;
-    display: block;
-    overflow: hidden;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    border: 2px solid #444; /* Borda padrão */
-    line-height: 0;
-}
-
-/* Esconde o checkbox fisicamente mas mantém funcional */
-.magic-check {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* IMAGEM */
-.magic-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    filter: grayscale(40%); /* Fica levemente cinza quando não selecionado */
-}
-
-/* EFEITO QUANDO SELECIONADO (A MÁGICA ACONTECE AQUI) */
-.magic-card:has(.magic-check:checked) {
-    border: 4px solid #28a745 !important; /* Borda Grossa Verde */
-    transform: scale(1.08);
-    z-index: 10;
-    box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
-}
-
-.magic-card:has(.magic-check:checked) img {
-    filter: grayscale(0%); /* Volta a cor total */
-}
-
-/* Overlay do Nome */
-.card-overlay {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    text-align: center;
-    font-size: 9px;
-    padding: 2px 0;
-}
-
-/* Classe para o vermelho puro que ignora o efeito striped do Bootstrap */
-.estoque-alerta-vivo {
-    background-color: #ff0000 !important;
-    color: #ffffff !important; /* Texto branco para contraste */
-    box-shadow: inset 0 0 0 9999px #ff0000 !important; /* Garante a cor sólida */
-}
-
-</style>
-
 
 <form id="formPedidos" method="POST" action="/pedido/salvar">
   <input type="hidden" name="dataSelecionada" id="dataSelecionadaHidden" value="<?= $dataSelecionada ?>">
@@ -191,16 +124,23 @@
               </td>
             <?php endforeach; ?>
 
-            <td>
-              <div class="input-group input-group-sm">
-                <input type="text"
-                       name="variado[<?= $cliente['id_cliente'] ?>]"
-                       value="<?= number_format((float)($pedidoCliente['valor_variado'] ?? 0), 2, ',', '.') ?>"
-                       class="form-control bg-dark text-light border-secondary"
-                       data-cliente="<?= $cliente['id_cliente'] ?>">
-                  <button type="button" onclick="abrirPopupVariado(<?= $cliente['id_cliente'] ?>)">📝</button>
-              </div>
-            </td>
+			<td>
+              <div class="input-group input-group-sm" style="min-width: 120px;">
+                <span class="input-group-text bg-secondary text-white border-secondary">R$</span>
+				<input type="text"
+					   name="variado[<?= $cliente['id_cliente'] ?>]"
+					   value="<?= number_format((float)($pedidoCliente['valor_variado'] ?? 0), 2, ',', '.') ?>"
+					   class="form-control bg-dark text-light border-secondary text-center"
+					   style="width: 55px;"
+					   data-cliente="<?= $cliente['id_cliente'] ?>">
+
+				<button class="btn btn-outline-secondary py-0 px-2"
+						type="button"
+						onclick="abrirPopupVariado(<?= $cliente['id_cliente'] ?>)">
+				  📝
+				</button>
+			  </div>
+			</td>
 			<td id="total_<?= $cliente['id_cliente'] ?>"
 				class="<?php
 					$temValor = false;

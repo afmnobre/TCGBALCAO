@@ -6,6 +6,11 @@
 
 <!-- Lista de torneios -->
 <?php if (!empty($torneios)): ?>
+
+<button class="btn btn-sm btn-info" onclick="window.open('/torneiosuico/verRegrasSuico', '_blank', 'width=800,height=600')">
+    <i class="fas fa-scroll"></i> Regras de Pontuação - Suíço
+</button>
+
     <div class="table-responsive">
         <table class="table table-dark table-striped table-hover align-middle">
             <thead>

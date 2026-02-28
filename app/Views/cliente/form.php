@@ -50,7 +50,7 @@
                            value="<?= $cg['id_cardgame'] ?>"
                            <?= $checked ?>>
 
-                    <img src="/storage/uploads/cardgames/<?= htmlspecialchars($cg['id_cardgame']) ?>/<?= htmlspecialchars($cg['imagem_fundo_card']) ?>"
+                    <img src="<?= $baseAssetUrl ?>/storage/uploads/cardgames/<?= htmlspecialchars($cg['id_cardgame']) ?>/<?= htmlspecialchars($cg['imagem_fundo_card']) ?>"
                          alt="<?= htmlspecialchars($cg['nome']) ?>">
 
                     <div class="card-overlay">

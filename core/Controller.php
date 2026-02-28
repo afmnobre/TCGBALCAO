@@ -1,6 +1,18 @@
 <?php
 class Controller
 {
+    protected string $baseUrl;
+    protected string $publicUrl;
+    protected string $storageUrl;
+
+    public function __construct()
+    {
+        // Base da URL, para /login e /admin funcionar
+        $this->baseUrl = '/'; // ajuste se não estiver na raiz
+        $this->publicUrl = $this->baseUrl . 'public/';
+        $this->storageUrl = $this->baseUrl . 'public/storage/';
+    }
+
     protected function view($view, $data = [])
     {
         extract($data);
@@ -26,7 +38,6 @@ class Controller
         require_once $footer;
     }
 
-    // Novo método para popups sem layout
     protected function rawView($view, $data = [])
     {
         extract($data);
@@ -38,6 +49,8 @@ class Controller
         if ($basePath === false) {
             die("BasePath inválido para views");
         }
+
+        $baseAssetUrl = '/public';
 
         $file = $basePath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $view) . '.php';
 
@@ -68,5 +81,6 @@ class Controller
         return new $model();
     }
 }
+
 
 

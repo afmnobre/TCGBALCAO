@@ -1,38 +1,77 @@
 <?php
+require_once __DIR__ . '/Autoload.php';
 
 class Router
 {
-    public function run()
-    {
-        $urlParam = $_GET['url'] ?? 'home/index';
-        $url = explode('/', trim($urlParam, '/'));
+	public function run()
+	{
+		$urlParam = $_GET['url'] ?? '';
+		$url = explode('/', trim($urlParam, '/'));
 
-        $controllerBase = strtolower($url[0]);
-        $controllerName = ucfirst($controllerBase) . 'Controller';
-        $method = $url[1] ?? 'index'; // corrigido
+		$isAdmin = false;
 
-        $controllerPath = __DIR__ . "/../app/Controllers/{$controllerName}.php";
+		// Detecta prefixo admin
+		if (!empty($url[0]) && strtolower($url[0]) === 'admin') {
+			$isAdmin = true;
+			array_shift($url); // remove 'admin'
+		}
 
-        if (!file_exists($controllerPath)) {
-            die("Controller não encontrado: {$controllerName}");
-        }
+		// Se depois de remover admin não sobrar nada
+		if (empty($url[0])) {
+			$controllerBase = $isAdmin ? 'auth' : 'home';
+		} else {
+			$controllerBase = strtolower($url[0]);
+		}
 
-        require_once $controllerPath;
+		$controllerName = ucfirst($controllerBase) . 'Controller';
+		$method = $url[1] ?? 'index';
 
-        $controller = new $controllerName;
+		// Define caminho correto
+		if ($isAdmin) {
+			$controllerPath = __DIR__ . "/../admin/Controllers/{$controllerName}.php";
+		} else {
+			$controllerPath = __DIR__ . "/../app/Controllers/{$controllerName}.php";
+		}
 
-        if (!method_exists($controller, $method)) {
-            die("Método não encontrado: {$method}");
-        }
+		if (!file_exists($controllerPath)) {
+			die("Controller não encontrado: {$controllerName}");
+		}
 
-        $params = array_slice($url, 2);
+		require_once $controllerPath;
 
-        if (!empty($params)) {
-            call_user_func_array([$controller, $method], $params);
-        } else {
-            call_user_func([$controller, $method]);
-        }
-    }
+		$controller = new $controllerName;
+
+
+		// Middleware automático
+
+		require_once __DIR__ . '/AuthAdmin.php';
+		require_once __DIR__ . '/AuthLoja.php';
+
+		// Rotas públicas que não exigem login
+		$rotasPublicasApp = ['auth'];
+		$rotasPublicasAdmin = ['auth'];
+
+		if ($isAdmin) {
+
+			if (!in_array(strtolower($controllerBase), $rotasPublicasAdmin)) {
+				AuthAdmin::verificarLogin();
+			}
+
+		} else {
+
+			if (!in_array(strtolower($controllerBase), $rotasPublicasApp)) {
+				AuthLoja::verificarLogin();
+			}
+		}
+
+		if (!method_exists($controller, $method)) {
+			die("Método não encontrado: {$method}");
+		}
+
+		$params = array_slice($url, 2);
+
+		call_user_func_array([$controller, $method], $params);
+	}
+
 }
-
 

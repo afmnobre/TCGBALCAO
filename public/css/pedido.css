@@ -1,160 +1,149 @@
-/*Mostrar no calendario Pedidos em aberto */
-.has-pedido {
-    background-color: #ff4d4d !important; /* vermelho */
-    color: #fff !important;               /* texto branco */
-    border-radius: 50%;                   /* bolinha */
+/* --- ESTILOS GERAIS E CALENDÁRIO --- */
+.main-content {
+    margin: 80px 40px 0 40px;
 }
 
-/* Destaque para cabeçalho de produto em alerta de estoque */
-.estoque-alerta {
-    background-color: #ff0000; /* amarelo claro */
-    font-weight: bold;
-    border: 2px solid #ff9900; /* borda laranja */
+.has-pedido {
+    background-color: #ff4d4d !important;
+    color: #fff !important;
+    border-radius: 50%;
 }
-/* Fundo vermelho para pedidos em aberto */
+
+/* --- ALERTAS E ESTOQUE --- */
+.estoque-alerta {
+    background-color: #ff0000;
+    font-weight: bold;
+    border: 2px solid #ff9900;
+}
+
+.estoque-alerta-vivo {
+    background-color: #ff0000 !important;
+    color: #ffffff !important;
+    box-shadow: inset 0 0 0 9999px #ff0000 !important;
+}
+
 .total-aberto {
     background-color: #ff0000;
     font-weight: bold;
-    color: #fff; /* cor da fonte preta */
+    color: #fff;
 }
 
-/* Fundo verde para pedidos pagos */
 .total-pago {
     background-color: #00ff00;
     font-weight: bold;
-    color: #000; /* cor da fonte preta */
-}
-/*Aumentando a largura de todas as views*/
-.main-content {
-  margin-top: 80px;
-  margin-left: 40px;
-  margin-right: 40px;
+    color: #000;
 }
 
+/* --- ANIMAÇÃO DE ALERTA --- */
 .custom-alert {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: black;
-  color: white;
-  border: 6px solid red;
-  padding: 20px 30px;
-  font-size: 20px;
-  font-weight: bold;
-  text-align: center;
-  z-index: 9999;
-  animation: blinkBorder 1s infinite;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: black;
+    color: white;
+    border: 6px solid red;
+    padding: 20px 30px;
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    z-index: 9999;
+    animation: blinkBorder 1s infinite;
 }
 
 @keyframes blinkBorder {
-  0% { border-color: red; }
-  50% { border-color: transparent; }
-  100% { border-color: red; }
+    0%, 100% { border-color: red; }
+    50% { border-color: transparent; }
 }
 
-
-/* GRID RESPONSIVO */
+/* --- GRID DE CARTAS --- */
 .cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 57px);
-  gap: 14px;
-  justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 60px);
+    gap: 14px;
+    justify-content: flex-start;
 }
 
-/* CARTA BASE */
+/* --- COMPONENTE MAGIC CARD --- */
 .magic-card {
-  position: relative;
-  width: 57px;
-  height: 80px;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border-radius: 8px;
-  overflow: hidden;
-
-  /* sombra estilo carta real */
-  box-shadow:
-    0 4px 8px rgba(0,0,0,0.6),
-    0 0 0 2px rgba(255,255,255,0.08) inset;
+    position: relative; /* Necessário para o posicionamento absoluto da imagem e overlay */
+    width: 60px;
+    height: 85px;
+    flex: 0 0 60px;
+    cursor: pointer;
+    display: block;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 2px solid #444;
+    transition: all 0.2s ease;
 }
 
-/* IMAGEM */
-.magic-card {
-  position: relative;
-  width: 57px;
-  height: 80px;
-  cursor: pointer;
-  border-radius: 6px;
-  overflow: hidden;
-  display: block;
-
-  box-shadow: 0 6px 14px rgba(0,0,0,0.7);
-}
-
-/* IMAGEM REALMENTE 100% */
+/* Isso garante que a imagem ocupe TODO o espaço do label */
 .magic-card img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Preenche o espaço cortando sobras, sem deformar */
+    display: block;
+    filter: grayscale(40%);
+    transition: filter 0.2s ease;
+    position: absolute; /* Adicionado para garantir que fique atrás do overlay */
+    top: 0;
+    left: 0;
 }
 
-/* MOLDURA PRETA ESTILO CARTA */
-.magic-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 6px;
-  box-shadow:
-    inset 0 0 0 3px #000,          /* borda preta */
-    inset 0 0 0 4px rgba(255,255,255,0.05); /* filete interno */
-  pointer-events: none;
-}
-
-
-/* OVERLAY */
-.card-overlay {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  background: rgba(0,0,0,0.65);
-  text-align: center;
-  padding: 2px;
-  font-size: 10px;
-  color: #fff;
-}
-
-/* ESCONDE CHECKBOX */
-.magic-check {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-  width: 0;
-  height: 0;
-}
-
-
-/* HOVER ESTILO CARTA FÍSICA */
 .magic-card:hover {
-  transform: scale(1.08) rotateZ(-1deg);
-  box-shadow:
-    0 8px 18px rgba(0,0,0,0.8),
-    0 0 0 2px rgba(255,255,255,0.15) inset;
-  z-index: 10;
+    transform: scale(1.08) rotateZ(-1deg);
+    z-index: 10;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.8);
 }
 
-/* DESTACAR QUANDO MARCADO */
-.magic-check:checked + img {
-  outline: 3px solid #ffc107;
-  outline-offset: -3px;
+/* Moldura interna estilo carta */
+.magic-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,0.5);
+    pointer-events: none;
 }
 
-.magic-check:checked ~ .card-overlay {
-  background: rgba(255,193,7,0.85);
-  color: #000;
-  font-weight: bold;
+/* --- ESTADO SELECIONADO (CHECKED) --- */
+.magic-check {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+/* Quando o checkbox dentro do card está marcado */
+.magic-card:has(.magic-check:checked) {
+    border: 3px solid #28a745 !important; /* Verde Sucesso */
+    transform: scale(1.05);
+    z-index: 9;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.6);
+}
+
+.magic-card:has(.magic-check:checked) img {
+    filter: grayscale(0%); /* Ganha cor total */
+}
+
+/* --- OVERLAY DE TEXTO --- */
+.card-overlay {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    text-align: center;
+    font-size: 9px;
+    padding: 2px 0;
+    transition: background 0.2s ease;
+}
+
+.magic-card:has(.magic-check:checked) .card-overlay {
+    background: rgba(40, 167, 69, 0.9); /* Overlay fica verde se selecionado */
+    font-weight: bold;
 }
 
 

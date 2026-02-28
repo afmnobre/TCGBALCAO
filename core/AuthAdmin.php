@@ -1,12 +1,11 @@
 <?php
+
 class AuthAdmin
 {
-    public static function check()
+    public static function verificarLogin()
     {
-        session_start();
-
-        if (!isset($_SESSION['admin_id'])) {
-            header('Location: /TCGBALCAO/public/admin.php');
+        if (empty($_SESSION['ADMIN'])) {
+            header("Location: /admin/auth");
             exit;
         }
     }

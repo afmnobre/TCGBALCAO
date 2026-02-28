@@ -187,4 +187,24 @@ public function limparResultado($id_partida, $id_torneio) {
     header("Location: /torneiosuico/gerenciar/$id_torneio");
     exit;
 }
+
+public function verRegrasSuico()
+{
+    AuthMiddleware::verificarLogin();
+
+    $modelSuico = new TorneioSuico();
+    $id_loja = $_SESSION['LOJA']['id_loja'];
+
+    // Busca apenas os dados da loja
+    $loja = $modelSuico->buscarLoja($id_loja);
+
+    // Dados "estáticos" das regras MD1 e MD3
+    $data = [
+        'loja' => $loja
+    ];
+
+    require __DIR__ . '/../Views/torneio/verRegrasSuico.php';
+}
+
+
 }
